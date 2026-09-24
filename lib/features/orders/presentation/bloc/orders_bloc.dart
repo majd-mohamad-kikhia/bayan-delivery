@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/realtime/device_poller.dart';
 import '../../../../core/storage/app_preferences.dart';
 import '../../data/repositories/orders_repository.dart';
 import 'orders_event.dart';
@@ -12,11 +13,14 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
   OrdersBloc({
     required OrdersRepository repository,
     required AppPreferences preferences,
+    DevicePoller? devicePoller,
   })  : _repository = repository,
         _preferences = preferences,
+        _devicePoller = devicePoller,
         super(OrdersState(dongleNumber: preferences.dongleNumber)) {
     on<OrdersRequested>(_onRequested);
     on<OrdersPollTicked>(_onPollTicked);
+    on<OrdersPushReceived>(_onPushReceived);
     on<OrdersPlatformFilterChanged>(_onFilterChanged);
     on<OrdersHistoryToggled>(_onHistoryToggled);
     on<OrdersDongleChanged>(_onDongleChanged);
@@ -26,19 +30,49 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     _pollTimer = Timer.periodic(AppConstants.pollInterval, (_) {
       if (!isClosed) add(const OrdersPollTicked());
     });
+    _pushSubscription = devicePoller?.messages.listen((_) {
+      if (!isClosed) add(const OrdersPushReceived());
+    });
   }
 
   final OrdersRepository _repository;
   final AppPreferences _preferences;
+  final DevicePoller? _devicePoller;
   late final Timer _pollTimer;
+  StreamSubscription<Object?>? _pushSubscription;
+  bool _backgroundFetchInFlight = false;
+  bool _backgroundFetchQueued = false;
 
   Future<void> _onRequested(OrdersRequested event, Emitter<OrdersState> emit) async {
     emit(state.copyWith(status: OrdersStatus.loading));
     await _fetch(emit);
   }
 
-  Future<void> _onPollTicked(OrdersPollTicked event, Emitter<OrdersState> emit) async {
-    await _fetch(emit, silent: true);
+  Future<void> _onPollTicked(OrdersPollTicked event, Emitter<OrdersState> emit) =>
+      _backgroundFetch(emit, queueIfBusy: false);
+
+  Future<void> _onPushReceived(OrdersPushReceived event, Emitter<OrdersState> emit) =>
+      _backgroundFetch(emit, queueIfBusy: true);
+
+  /// One background fetch at a time. A tick that lands mid-fetch is dropped
+  /// (the fetch in flight is just as fresh); a push that lands mid-fetch
+  /// queues exactly one follow-up, since the data changed after that fetch
+  /// started. A burst of pushes therefore costs at most two requests, and a
+  /// slow backend never piles up concurrent ones.
+  Future<void> _backgroundFetch(Emitter<OrdersState> emit, {required bool queueIfBusy}) async {
+    if (_backgroundFetchInFlight) {
+      if (queueIfBusy) _backgroundFetchQueued = true;
+      return;
+    }
+    _backgroundFetchInFlight = true;
+    try {
+      do {
+        _backgroundFetchQueued = false;
+        await _fetch(emit, silent: true);
+      } while (_backgroundFetchQueued && !emit.isDone);
+    } finally {
+      _backgroundFetchInFlight = false;
+    }
   }
 
   Future<void> _fetch(Emitter<OrdersState> emit, {bool silent = false}) async {
@@ -77,6 +111,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
 
   Future<void> _onDongleChanged(OrdersDongleChanged event, Emitter<OrdersState> emit) async {
     await _preferences.setDongleNumber(event.dongleNumber);
+    _devicePoller?.switchDevice(event.dongleNumber);
     emit(state.copyWith(dongleNumber: event.dongleNumber, status: OrdersStatus.loading));
     await _fetch(emit);
   }
@@ -137,6 +172,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
   @override
   Future<void> close() {
     _pollTimer.cancel();
+    _pushSubscription?.cancel();
     return super.close();
   }
 }

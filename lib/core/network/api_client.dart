@@ -50,6 +50,35 @@ class ApiClient {
       throw ApiException.fromDioException(e);
     }
   }
+
+  /// POSTs [data] and returns the decoded JSON body for **any** HTTP status,
+  /// for endpoints that report failures inside the body (the platform
+  /// executor envelope) — a 4xx/5xx still carries the details we need.
+  Future<Map<String, dynamic>> postEnvelope(
+    String path, {
+    Object? data,
+    Duration? timeout,
+  }) async {
+    try {
+      final response = await _dio.post<Object?>(
+        path,
+        data: data,
+        options: Options(
+          sendTimeout: timeout,
+          receiveTimeout: timeout,
+          validateStatus: (_) => true,
+        ),
+      );
+      final body = response.data;
+      if (body is Map<String, dynamic>) return body;
+      throw ApiException(
+        'Unexpected response from $path (HTTP ${response.statusCode})',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
 }
 
 class _ApiLogInterceptor extends Interceptor {

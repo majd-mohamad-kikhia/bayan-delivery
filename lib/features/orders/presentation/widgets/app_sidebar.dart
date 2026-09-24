@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/navigation/app_section.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
@@ -8,12 +9,21 @@ import '../bloc/orders_state.dart';
 import 'dongle_settings_dialog.dart';
 
 class AppSidebar extends StatelessWidget {
-  const AppSidebar({super.key, this.onMerchantsTap});
+  const AppSidebar({
+    super.key,
+    required this.section,
+    required this.onSectionChanged,
+    this.onMerchantsTap,
+  });
 
+  final AppSection section;
+  final ValueChanged<AppSection> onSectionChanged;
   final VoidCallback? onMerchantsTap;
 
   @override
   Widget build(BuildContext context) {
+    final ordersActive = section == AppSection.orders;
+
     return Container(
       width: 220,
       color: AppTheme.sidebarBg,
@@ -32,8 +42,9 @@ class AppSidebar extends StatelessWidget {
                 _NavItem(
                   icon: Icons.dashboard_outlined,
                   label: 'Live Kanban',
-                  isActive: !state.showHistory,
+                  isActive: ordersActive && !state.showHistory,
                   onTap: () {
+                    onSectionChanged(AppSection.orders);
                     if (state.showHistory) {
                       context.read<OrdersBloc>().add(const OrdersHistoryToggled());
                     }
@@ -42,14 +53,22 @@ class AppSidebar extends StatelessWidget {
                 _NavItem(
                   icon: Icons.history_outlined,
                   label: 'Order Archive',
-                  isActive: state.showHistory,
+                  isActive: ordersActive && state.showHistory,
                   onTap: () {
+                    onSectionChanged(AppSection.orders);
                     if (!state.showHistory) {
                       context.read<OrdersBloc>().add(const OrdersHistoryToggled());
                     }
                   },
                 ),
+                _NavItem(
+                  icon: Icons.inventory_2_outlined,
+                  label: 'Products',
+                  isActive: section == AppSection.products,
+                  onTap: () => onSectionChanged(AppSection.products),
+                ),
                 if (onMerchantsTap != null &&
+                    ordersActive &&
                     (state.platformFilter == 'keeta' ||
                         state.platformFilter == 'hungerstation'))
                   _NavItem(

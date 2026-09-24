@@ -18,6 +18,12 @@ final class OrdersPollTicked extends OrdersEvent {
   const OrdersPollTicked();
 }
 
+/// The backend pushed something for this device (via long-polling) —
+/// refresh now instead of waiting for the next tick.
+final class OrdersPushReceived extends OrdersEvent {
+  const OrdersPushReceived();
+}
+
 final class OrdersPlatformFilterChanged extends OrdersEvent {
   const OrdersPlatformFilterChanged(this.platform);
 

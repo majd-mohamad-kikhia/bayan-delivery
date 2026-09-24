@@ -9,26 +9,16 @@ import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
 import '../config/platform_board_config.dart';
-import '../widgets/app_sidebar.dart';
 import '../widgets/board_header.dart';
 import '../widgets/kanban_column.dart';
 import '../widgets/order_card.dart';
 
 class OrdersPage extends StatelessWidget {
-  const OrdersPage({super.key, this.onMerchantsTap});
-
-  final VoidCallback? onMerchantsTap;
+  const OrdersPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          AppSidebar(onMerchantsTap: onMerchantsTap),
-          const Expanded(child: _MainContent()),
-        ],
-      ),
-    );
+    return const _MainContent();
   }
 }
 
