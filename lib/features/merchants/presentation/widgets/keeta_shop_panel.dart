@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/app_error.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
+import '../../../../core/widgets/error_view.dart';
+import '../../data/models/keeta_shop_model.dart';
 import '../cubit/keeta_shop_cubit.dart';
+import '../l10n/merchants_strings.dart';
 import 'business_hours_list.dart';
 import 'emergency_status_dialog.dart';
 import 'shop_status_badge.dart';
@@ -14,21 +19,22 @@ void showKeetaShopPanel(BuildContext context, {required String dongleNumber}) {
   showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
-    barrierLabel: 'Keeta shops',
+    barrierLabel: context.merchantsStrings.keetaShops,
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 260),
     transitionBuilder: (context, animation, _, child) {
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final dx = Directionality.of(context) == TextDirection.rtl ? -0.05 : 0.05;
       return FadeTransition(
         opacity: animation,
         child: SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0.05, 0), end: Offset.zero)
+          position: Tween<Offset>(begin: Offset(dx, 0), end: Offset.zero)
               .animate(curved),
           child: child,
         ),
       );
     },
-    pageBuilder: (context, _, __) => BlocProvider.value(
+    pageBuilder: (context, _, _) => BlocProvider.value(
       value: cubit,
       child: const _KeetaShopPanel(),
     ),
@@ -50,11 +56,7 @@ class _KeetaShopPanel extends StatelessWidget {
           child: BlocConsumer<KeetaShopCubit, KeetaShopState>(
             listenWhen: (p, c) => c.actionError != null && p.actionError != c.actionError,
             listener: (context, state) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(content: Text(state.actionError!), backgroundColor: AppTheme.coral),
-                );
+              AppSnackBar.fromError(context, state.actionError!);
               context.read<KeetaShopCubit>().clearActionError();
             },
             builder: (context, state) {
@@ -78,8 +80,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.merchantsStrings;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 8, 14),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 8, 14),
       child: Row(
         children: [
           Container(
@@ -92,17 +95,17 @@ class _Header extends StatelessWidget {
             child: const Icon(Icons.storefront_outlined, color: Color(0xFF6D28D9), size: 18),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Keeta Shops',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+                  s.keetaShops,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                 ),
                 Text(
-                  'Branches · hours · emergency status',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  s.keetaShopsSubtitle,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
               ],
             ),
@@ -133,35 +136,24 @@ class _Body extends StatelessWidget {
       return const Center(child: CircularProgressIndicator(strokeWidth: 2));
     }
 
+    final s = context.merchantsStrings;
+
     if (state.status == KeetaShopLoadStatus.failure) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                state.errorMessage ?? 'Failed to load shops',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-              ),
-              TextButton(
-                onPressed: () => context.read<KeetaShopCubit>().load(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+      return ErrorView(
+        error: state.error ?? const AppError(AppErrorKind.unknown),
+        compact: true,
+        onRetry: () => context.read<KeetaShopCubit>().load(),
       );
     }
 
     if (state.shops.isEmpty) {
-      return const Center(
-        child: Text('No authorized shops found', style: TextStyle(color: AppTheme.textMuted)),
+      return Center(
+        child: Text(s.noAuthorizedShops, style: const TextStyle(color: AppTheme.textMuted)),
       );
     }
 
     final shop = state.selectedShop;
+    final shopName = shop == null ? s.thisBranch : _displayName(shop, s);
     final status = state.shopStatus;
     final available = status?.isAvailable ?? false;
 
@@ -170,7 +162,7 @@ class _Body extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _Label('Branch'),
+          _Label(s.branch),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -183,10 +175,13 @@ class _Body extends StatelessWidget {
                 isExpanded: true,
                 value: state.selectedShopId,
                 items: [
-                  for (final s in state.shops)
+                  for (final item in state.shops)
                     DropdownMenuItem(
-                      value: s.id,
-                      child: Text('${s.name}  ·  #${s.id}', overflow: TextOverflow.ellipsis),
+                      value: item.id,
+                      child: Text(
+                        '${_displayName(item, s)}  ·  #${item.id}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
                 onChanged: (id) {
@@ -208,10 +203,10 @@ class _Body extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Branch status',
-                        style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                        s.branchStatus,
+                        style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
                       ),
                     ),
                     if (status != null) ShopStatusBadge(isAvailable: available),
@@ -226,7 +221,7 @@ class _Body extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _ActionBtn(
-                        label: 'Emergency Close',
+                        label: s.emergencyClose,
                         color: AppTheme.coral,
                         enabled: status != null && available && !state.isUpdatingStatus,
                         loading: state.isUpdatingStatus && available,
@@ -234,7 +229,7 @@ class _Body extends StatelessWidget {
                           final ok = await confirmEmergencyStatusChange(
                             context,
                             closing: true,
-                            shopName: shop?.name ?? 'shop',
+                            shopName: shopName,
                           );
                           if (ok && context.mounted) {
                             await context.read<KeetaShopCubit>().setAvailable(available: false);
@@ -245,7 +240,7 @@ class _Body extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _ActionBtn(
-                        label: 'Reopen',
+                        label: s.reopen,
                         color: const Color(0xFF22C55E),
                         enabled: status != null && !available && !state.isUpdatingStatus,
                         loading: state.isUpdatingStatus && !available,
@@ -253,7 +248,7 @@ class _Body extends StatelessWidget {
                           final ok = await confirmEmergencyStatusChange(
                             context,
                             closing: false,
-                            shopName: shop?.name ?? 'shop',
+                            shopName: shopName,
                           );
                           if (ok && context.mounted) {
                             await context.read<KeetaShopCubit>().setAvailable(available: true);
@@ -267,7 +262,7 @@ class _Body extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const _Label('Business hours (local time)'),
+          _Label(s.businessHoursLocal),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
@@ -277,13 +272,16 @@ class _Body extends StatelessWidget {
               border: Border.all(color: AppTheme.border),
             ),
             child: status == null
-                ? const Text('Loading hours…', style: TextStyle(color: AppTheme.textMuted, fontSize: 13))
+                ? Text(s.loadingHours, style: const TextStyle(color: AppTheme.textMuted, fontSize: 13))
                 : BusinessHoursList(weekHours: status.weekHours),
           ),
         ],
       ),
     );
   }
+
+  static String _displayName(KeetaShopModel shop, MerchantsStrings s) =>
+      shop.name.isEmpty ? s.shopFallbackName(shop.id) : shop.name;
 }
 
 class _Label extends StatelessWidget {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/merchants_strings.dart';
+
 class ShopStatusBadge extends StatelessWidget {
   const ShopStatusBadge({super.key, required this.isAvailable});
 
@@ -7,8 +9,9 @@ class ShopStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.merchantsStrings;
     final color = isAvailable ? const Color(0xFF22C55E) : const Color(0xFFFF6B6B);
-    final label = isAvailable ? 'AVAILABLE' : 'UNAVAILABLE';
+    final label = isAvailable ? s.available : s.unavailable;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 import '../../data/models/product_model.dart';
+import '../l10n/products_strings.dart';
 import '../utils/product_formatters.dart';
 
 class ProductDetailPanel extends StatelessWidget {
@@ -18,9 +21,11 @@ class ProductDetailPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
+    final common = context.commonStrings;
     return Container(
       width: 320,
-      margin: const EdgeInsets.fromLTRB(0, 0, 16, 16),
+      margin: const EdgeInsetsDirectional.fromSTEB(0, 0, 16, 16),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -30,13 +35,13 @@ class ProductDetailPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 8, 8),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Product details',
-                    style: TextStyle(
+                    s.productDetails,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
@@ -46,6 +51,7 @@ class ProductDetailPanel extends StatelessWidget {
                 IconButton(
                   onPressed: onClose,
                   icon: const Icon(Icons.close, size: 18),
+                  tooltip: common.close,
                   color: AppTheme.textMuted,
                   splashRadius: 18,
                 ),
@@ -76,47 +82,47 @@ class ProductDetailPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _DetailRow(
-                  label: 'SKU',
+                  label: s.sku,
                   value: product.sku,
-                  onCopy: () => copyToClipboard(context, 'SKU', product.sku),
+                  onCopy: () => copyToClipboard(context, s.sku, product.sku),
                 ),
                 if (product.barcode != null)
                   _DetailRow(
-                    label: 'Barcode',
+                    label: s.barcode,
                     value: product.barcode!,
                     onCopy: () =>
-                        copyToClipboard(context, 'Barcode', product.barcode!),
+                        copyToClipboard(context, s.barcode, product.barcode!),
                   ),
-                _DetailRow(label: 'Category', value: product.category),
-                _DetailRow(label: 'Unit', value: product.unit),
+                _DetailRow(label: s.category, value: product.category),
+                _DetailRow(label: s.unit, value: product.unit),
                 _DetailRow(
-                  label: 'Sale price',
-                  value: formatSar(product.salePrice),
+                  label: s.salePrice,
+                  value: common.money(product.salePrice),
                 ),
                 _DetailRow(
-                  label: 'Cost price',
-                  value: formatSar(product.costPrice),
+                  label: s.costPrice,
+                  value: common.money(product.costPrice),
                 ),
                 _DetailRow(
-                  label: 'Tax rate',
+                  label: s.taxRate,
                   value: '${product.taxRate.toStringAsFixed(0)}%',
                 ),
                 _DetailRow(
-                  label: 'Stock',
+                  label: s.stock,
                   value: product.stockQty % 1 == 0
                       ? product.stockQty.toInt().toString()
                       : product.stockQty.toStringAsFixed(1),
                 ),
                 _DetailRow(
-                  label: 'Status',
-                  value: product.isActive ? 'Active' : 'Inactive',
+                  label: s.status,
+                  value: product.isActive ? common.active : common.inactive,
                 ),
                 const SizedBox(height: 20),
                 if (onAddToPlatforms != null) ...[
                   FilledButton.icon(
                     onPressed: onAddToPlatforms,
                     icon: const Icon(Icons.add_to_photos_outlined, size: 16),
-                    label: const Text('Add to platforms'),
+                    label: Text(s.addToPlatforms),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -125,19 +131,9 @@ class ProductDetailPanel extends StatelessWidget {
                   const SizedBox(height: 8),
                 ],
                 OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Edit products in Al-Bayan Accounting.',
-                          ),
-                        ),
-                      );
-                  },
+                  onPressed: () => AppSnackBar.info(context, s.editInAlBayan),
                   icon: const Icon(Icons.open_in_new, size: 16),
-                  label: const Text('Open in Al-Bayan'),
+                  label: Text(s.openInAlBayan),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 12),

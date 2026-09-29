@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/app_error.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
+import '../../../../core/widgets/error_view.dart';
 import '../../data/models/hs_vendor_status_model.dart';
 import '../cubit/hs_outlet_cubit.dart';
+import '../l10n/merchants_strings.dart';
 
 void showHsOutletPanel(BuildContext context, {required String dongleNumber}) {
   final cubit = context.read<HsOutletCubit>();
@@ -12,7 +16,7 @@ void showHsOutletPanel(BuildContext context, {required String dongleNumber}) {
   showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
-    barrierLabel: 'HungerStation outlet',
+    barrierLabel: context.merchantsStrings.hsOutlet,
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 260),
     transitionBuilder: (context, animation, _, child) {
@@ -25,7 +29,7 @@ void showHsOutletPanel(BuildContext context, {required String dongleNumber}) {
         ),
       );
     },
-    pageBuilder: (context, _, __) => BlocProvider.value(
+    pageBuilder: (context, _, _) => BlocProvider.value(
       value: cubit,
       child: const _HsOutletPanel(),
     ),
@@ -47,11 +51,7 @@ class _HsOutletPanel extends StatelessWidget {
           child: BlocConsumer<HsOutletCubit, HsOutletState>(
             listenWhen: (p, c) => c.actionError != null && p.actionError != c.actionError,
             listener: (context, state) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(content: Text(state.actionError!), backgroundColor: AppTheme.coral),
-                );
+              AppSnackBar.fromError(context, state.actionError!);
               context.read<HsOutletCubit>().clearActionError();
             },
             builder: (context, state) {
@@ -77,8 +77,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.merchantsStrings;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 8, 14),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 8, 14),
       child: Row(
         children: [
           Container(
@@ -91,17 +92,17 @@ class _Header extends StatelessWidget {
             child: const Icon(Icons.storefront_outlined, color: Color(0xFFEA580C), size: 18),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'HungerStation Outlet',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+                  s.hsOutlet,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                 ),
                 Text(
-                  'Open / close vendor status',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  s.hsOutletSubtitle,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
               ],
             ),
@@ -129,25 +130,13 @@ class _Body extends StatelessWidget {
       return const Center(child: CircularProgressIndicator(strokeWidth: 2));
     }
 
+    final s = context.merchantsStrings;
+
     if (state.status == HsOutletLoadStatus.failure) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                state.errorMessage ?? 'Failed to load outlet',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-              ),
-              TextButton(
-                onPressed: () => context.read<HsOutletCubit>().load(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+      return ErrorView(
+        error: state.error ?? const AppError(AppErrorKind.unknown),
+        compact: true,
+        onRetry: () => context.read<HsOutletCubit>().load(),
       );
     }
 
@@ -159,9 +148,9 @@ class _Body extends StatelessWidget {
         children: [
           _StatusCard(vendor: vendor),
           const SizedBox(height: 16),
-          const Text(
-            'UPDATE STATUS',
-            style: TextStyle(
+          Text(
+            s.updateStatus.toUpperCase(),
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppTheme.textMuted,
@@ -170,7 +159,7 @@ class _Body extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _QuickAction(
-            label: 'Reopen (OPEN)',
+            label: s.reopenOpen,
             color: const Color(0xFF22C55E),
             enabled: !vendor.isOpen && !state.isUpdating,
             loading: state.isUpdating,
@@ -178,7 +167,7 @@ class _Body extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _QuickAction(
-            label: 'Close for today',
+            label: s.closeForToday,
             color: AppTheme.coral,
             enabled: vendor.isOpen && !state.isUpdating,
             loading: false,
@@ -186,7 +175,7 @@ class _Body extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _QuickAction(
-            label: 'Close until…',
+            label: s.closeUntil,
             color: const Color(0xFFF59E0B),
             enabled: vendor.isOpen && !state.isUpdating,
             loading: false,
@@ -236,25 +225,28 @@ class _Body extends StatelessWidget {
   Future<String?> _pickReason(BuildContext context) {
     return showModalBottomSheet<String>(
       context: context,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Closed reason',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+      builder: (context) {
+        final s = context.merchantsStrings;
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  s.closedReasonTitle,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
               ),
-            ),
-            for (final reason in HsClosedReasons.values)
-              ListTile(
-                title: Text(HsClosedReasons.label(reason)),
-                onTap: () => Navigator.pop(context, reason),
-              ),
-          ],
-        ),
-      ),
+              for (final reason in HsClosedReasons.values)
+                ListTile(
+                  title: Text(s.closedReason(reason)),
+                  onTap: () => Navigator.pop(context, reason),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -266,6 +258,7 @@ class _StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.merchantsStrings;
     final open = vendor.isOpen;
     final color = open ? const Color(0xFF22C55E) : AppTheme.coral;
 
@@ -281,10 +274,10 @@ class _StatusCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Vendor status',
-                  style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                  s.vendorStatus,
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
                 ),
               ),
               Container(
@@ -294,28 +287,33 @@ class _StatusCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  vendor.status,
+                  s.vendorStatusLabel(vendor.status),
                   style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text('Vendor: ${vendor.vendorId}', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-          Text('Chain: ${vendor.chainId}', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+          Text(s.vendorIdLabel(vendor.vendorId), style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+          Text(s.chainIdLabel(vendor.chainId), style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
           if (vendor.closedReason != null)
             Text(
-              'Reason: ${HsClosedReasons.label(vendor.closedReason!)}',
+              s.closedReasonLabel(s.closedReason(vendor.closedReason!)),
               style: const TextStyle(fontSize: 12, color: AppTheme.coral),
             ),
           if (vendor.closedUntil != null)
             Text(
-              'Until: ${vendor.closedUntil!.toLocal()}',
+              s.closedUntilLabel(_formatDateTime(vendor.closedUntil!.toLocal())),
               style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
         ],
       ),
     );
+  }
+
+  static String _formatDateTime(DateTime t) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)}';
   }
 }
 

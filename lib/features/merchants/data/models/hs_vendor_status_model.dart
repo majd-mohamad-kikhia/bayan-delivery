@@ -52,27 +52,4 @@ abstract final class HsClosedReasons {
     'BAD_WEATHER',
     'HOLIDAY_SPECIAL_DAY',
   ];
-
-  static String label(String value) {
-    switch (value) {
-      case 'TOO_BUSY_NO_DRIVERS':
-        return 'Too busy — no drivers';
-      case 'TOO_BUSY_KITCHEN':
-        return 'Too busy — kitchen';
-      case 'UPDATES_IN_MENU':
-        return 'Menu updates';
-      case 'TECHNICAL_PROBLEM':
-        return 'Technical problem';
-      case 'CLOSED':
-        return 'Closed';
-      case 'OTHER':
-        return 'Other';
-      case 'BAD_WEATHER':
-        return 'Bad weather';
-      case 'HOLIDAY_SPECIAL_DAY':
-        return 'Holiday / special day';
-      default:
-        return value;
-    }
-  }
 }

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/app_error.dart';
 import '../../../../core/storage/app_preferences.dart';
 import '../../data/models/keeta_shop_model.dart';
 import '../../data/models/keeta_shop_status_model.dart';
@@ -16,7 +17,7 @@ final class KeetaShopState extends Equatable {
     this.shopStatus,
     this.dongleNumber = '',
     this.isUpdatingStatus = false,
-    this.errorMessage,
+    this.error,
     this.actionError,
   });
 
@@ -26,8 +27,8 @@ final class KeetaShopState extends Equatable {
   final KeetaShopStatusModel? shopStatus;
   final String dongleNumber;
   final bool isUpdatingStatus;
-  final String? errorMessage;
-  final String? actionError;
+  final AppError? error;
+  final AppError? actionError;
 
   KeetaShopModel? get selectedShop {
     final id = selectedShopId;
@@ -46,9 +47,9 @@ final class KeetaShopState extends Equatable {
     bool clearShopStatus = false,
     String? dongleNumber,
     bool? isUpdatingStatus,
-    String? errorMessage,
+    AppError? error,
     bool clearError = false,
-    String? actionError,
+    AppError? actionError,
     bool clearActionError = false,
   }) {
     return KeetaShopState(
@@ -58,7 +59,7 @@ final class KeetaShopState extends Equatable {
       shopStatus: clearShopStatus ? null : (shopStatus ?? this.shopStatus),
       dongleNumber: dongleNumber ?? this.dongleNumber,
       isUpdatingStatus: isUpdatingStatus ?? this.isUpdatingStatus,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      error: clearError ? null : (error ?? this.error),
       actionError: clearActionError ? null : (actionError ?? this.actionError),
     );
   }
@@ -71,7 +72,7 @@ final class KeetaShopState extends Equatable {
         shopStatus,
         dongleNumber,
         isUpdatingStatus,
-        errorMessage,
+        error,
         actionError,
       ];
 }
@@ -117,7 +118,7 @@ class KeetaShopCubit extends Cubit<KeetaShopState> {
     } catch (e) {
       emit(state.copyWith(
         status: KeetaShopLoadStatus.failure,
-        errorMessage: e.toString(),
+        error: AppError.from(e),
       ));
     }
   }
@@ -142,7 +143,7 @@ class KeetaShopCubit extends Cubit<KeetaShopState> {
       );
       emit(state.copyWith(shopStatus: status, clearError: true));
     } catch (e) {
-      emit(state.copyWith(actionError: e.toString()));
+      emit(state.copyWith(actionError: AppError.from(e)));
     }
   }
 
@@ -159,7 +160,7 @@ class KeetaShopCubit extends Cubit<KeetaShopState> {
       );
       await refreshStatus();
     } catch (e) {
-      emit(state.copyWith(actionError: e.toString()));
+      emit(state.copyWith(actionError: AppError.from(e)));
     } finally {
       emit(state.copyWith(isUpdatingStatus: false));
     }

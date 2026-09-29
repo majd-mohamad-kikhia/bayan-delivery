@@ -91,7 +91,7 @@ final class PublishProductCubit extends Cubit<PublishProductState> {
       emit(
         state.copyWith(
           status: PublishProductStatus.failure,
-          errorMessage: 'Select at least one platform',
+          error: const NoPlatformSelected(),
         ),
       );
       emit(state.copyWith(status: PublishProductStatus.editing));
@@ -132,9 +132,9 @@ final class PublishProductCubit extends Cubit<PublishProductState> {
     emit(
       state.copyWith(
         status: PublishProductStatus.failure,
-        errorMessage: failed.length == 1
-            ? '${first.label}: ${first.resultMessage}'
-            : '${failed.length} platforms failed — see details, then retry.',
+        error: failed.length == 1 && first.result != null
+            ? PlatformPublishFailed(first.platformId, first.result!)
+            : PlatformsPublishFailed(failed.length),
       ),
     );
     emit(state.copyWith(status: PublishProductStatus.editing));
@@ -144,9 +144,7 @@ final class PublishProductCubit extends Cubit<PublishProductState> {
     if (isClosed) return;
     final current = state.platforms[platformId];
     if (current == null) return;
-    _put(
-      current.copyWith(phase: outcome.phase, resultMessage: outcome.message),
-    );
+    _put(current.copyWith(phase: outcome.phase, result: outcome));
   }
 
   void _put(PlatformPublishDraft draft, {bool clearError = false}) {

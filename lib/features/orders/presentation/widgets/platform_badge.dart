@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/platform_colors.dart';
 
 class PlatformBadge extends StatelessWidget {
@@ -17,7 +18,7 @@ class PlatformBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        PlatformColors.label(platform),
+        context.commonStrings.platformName(platform),
         style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );

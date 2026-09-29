@@ -90,7 +90,7 @@ class MerchantsRepository {
     final body = <String, dynamic>{
       'dongleNumber': dongleNumber,
       'status': status,
-      if (closedReason != null) 'closed_reason': closedReason,
+      'closed_reason': ?closedReason,
       if (closedUntil != null) 'closed_until': closedUntil.toUtc().toIso8601String(),
     };
     // ApiClient only has get/post — use Dio put via post path won't work.

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/utils/time_ago.dart';
 import '../../data/models/order_model.dart';
+import '../l10n/orders_strings.dart';
 import '../utils/order_status_style.dart';
 import 'cancel_reason_dialog.dart';
 import 'order_detail_dialog.dart';
@@ -22,11 +24,12 @@ class OrderCard extends StatelessWidget {
   Future<void> _handleAction(BuildContext context, String action) async {
     if (OrderStatusStyle.requiresReason(action)) {
       final isReject = action == 'reject';
+      final s = context.ordersStrings;
       final reason = await showCancelReasonDialog(
         context,
         orderId: order.orderCode ?? order.platformOrderId,
-        title: isReject ? 'Reject Refund?' : 'Cancel Order?',
-        confirmLabel: isReject ? 'Reject Refund' : 'Cancel Order',
+        title: isReject ? s.rejectRefundTitle : s.cancelOrderTitle,
+        confirmLabel: isReject ? s.rejectRefund : s.cancelOrder,
       );
       if (reason == null) return;
       onAction(action, reason: reason);
@@ -87,6 +90,8 @@ class _CardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
+    final common = context.commonStrings;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -100,7 +105,7 @@ class _CardBody extends StatelessWidget {
               const SizedBox(width: 3),
             ],
             Text(
-              timeAgo(order.updatedAt),
+              timeAgo(order.updatedAt, common),
               style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
             ),
           ],
@@ -113,6 +118,7 @@ class _CardBody extends StatelessWidget {
           children: [
             Text(
               '#${order.orderCode ?? order.platformOrderId}',
+              textDirection: TextDirection.ltr,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -122,7 +128,7 @@ class _CardBody extends StatelessWidget {
             const Spacer(),
             if (order.orderTotal != null)
               Text(
-                'SAR ${order.orderTotal!.toStringAsFixed(2)}',
+                common.money(order.orderTotal!),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -146,7 +152,7 @@ class _CardBody extends StatelessWidget {
                 ),
               if (order.itemCount != null)
                 Text(
-                  '${order.itemCount} item${order.itemCount == 1 ? '' : 's'}',
+                  s.itemCount(order.itemCount!),
                   style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                 ),
             ],
@@ -156,7 +162,7 @@ class _CardBody extends StatelessWidget {
         if (order.cancellationReason != null) ...[
           const SizedBox(height: 4),
           Text(
-            'Reason: ${order.cancellationReason}',
+            s.reason(order.cancellationReason!),
             style: const TextStyle(fontSize: 12, color: Color(0xFFFF6B6B)),
             overflow: TextOverflow.ellipsis,
           ),
@@ -199,6 +205,7 @@ class _ActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Row(
@@ -207,8 +214,8 @@ class _ActionsRow extends StatelessWidget {
             if (i > 0) const SizedBox(width: 6),
             Expanded(
               child: _ActionButton(
-                platform: platform,
                 action: actions[i],
+                label: s.actionLabel(actions[i], platform: platform),
                 onTap: () => onAction(actions[i]),
               ),
             ),
@@ -221,13 +228,13 @@ class _ActionsRow extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
-    required this.platform,
     required this.action,
+    required this.label,
     required this.onTap,
   });
 
-  final String platform;
   final String action;
+  final String label;
   final VoidCallback onTap;
 
   static const _destructive = {'cancel', 'reject'};
@@ -253,7 +260,7 @@ class _ActionButton extends StatelessWidget {
             Icon(OrderStatusStyle.actionIcon(action), size: 13, color: color),
             const SizedBox(width: 5),
             Text(
-              OrderStatusStyle.actionLabel(action, platform: platform),
+              label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

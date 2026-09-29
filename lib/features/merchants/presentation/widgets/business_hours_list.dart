@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/utc_clock.dart';
 import '../../data/models/keeta_shop_status_model.dart';
+import '../l10n/merchants_strings.dart';
 
 class BusinessHoursList extends StatelessWidget {
   const BusinessHoursList({super.key, required this.weekHours});
@@ -22,9 +23,9 @@ class BusinessHoursList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (weekHours.isEmpty) {
-      return const Text(
-        'No weekly hours configured',
-        style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+      return Text(
+        context.merchantsStrings.noWeeklyHours,
+        style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
       );
     }
 
@@ -51,15 +52,16 @@ class _DayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = _prettyDay(day.dayOfWeek);
+    final s = context.merchantsStrings;
+    final label = s.weekday(day.dayOfWeek);
     final times = day.timePeriods.isEmpty
-        ? 'Closed'
+        ? s.closedAllDay
         : day.timePeriods
             .map(
               (p) =>
                   '${formatUtcClockLocal(p.startTime)} – ${formatUtcClockLocal(p.endTime)}',
             )
-            .join(', ');
+            .join(s.listSeparator);
 
     final isToday = DateTime.now().weekday == _weekdayIndex(day.dayOfWeek);
 
@@ -94,12 +96,6 @@ class _DayRow extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String _prettyDay(String raw) {
-    if (raw.isEmpty) return raw;
-    final lower = raw.toLowerCase();
-    return '${lower[0].toUpperCase()}${lower.substring(1)}';
   }
 
   static int _weekdayIndex(String day) {

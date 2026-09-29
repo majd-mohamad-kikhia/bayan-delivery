@@ -10,6 +10,8 @@ class KeetaShopModel extends Equatable {
   });
 
   final int id;
+
+  /// Empty when the API omits it; the UI shows a localized fallback.
   final String name;
   final String? address;
   final String? longitude;
@@ -18,7 +20,7 @@ class KeetaShopModel extends Equatable {
   factory KeetaShopModel.fromJson(Map<String, dynamic> json) {
     return KeetaShopModel(
       id: (json['id'] as num).toInt(),
-      name: json['name']?.toString() ?? 'Shop ${json['id']}',
+      name: json['name']?.toString() ?? '',
       address: json['address']?.toString(),
       longitude: json['longitude']?.toString(),
       latitude: json['latitude']?.toString(),

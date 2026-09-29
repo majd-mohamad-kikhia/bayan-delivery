@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../l10n/orders_strings.dart';
 
 /// Animated reason dialog for cancel / reject refund.
 /// Returns the reason string, or null if dismissed.
 Future<String?> showCancelReasonDialog(
   BuildContext context, {
   required String orderId,
-  String title = 'Cancel Order?',
-  String confirmLabel = 'Cancel Order',
+  required String title,
+  required String confirmLabel,
 }) {
   return showGeneralDialog<String>(
     context: context,
@@ -26,7 +27,7 @@ Future<String?> showCancelReasonDialog(
         ),
       );
     },
-    pageBuilder: (context, _, __) => _CancelDialog(
+    pageBuilder: (context, _, _) => _CancelDialog(
       orderId: orderId,
       title: title,
       confirmLabel: confirmLabel,
@@ -65,6 +66,7 @@ class _CancelDialogState extends State<_CancelDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
@@ -102,14 +104,14 @@ class _CancelDialogState extends State<_CancelDialog> {
 
                 // Subtitle
                 Text(
-                  'Order #${widget.orderId}',
+                  s.orderNumber(widget.orderId),
                   style: const TextStyle(fontSize: 14, color: AppTheme.textMuted),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Please provide a reason. This action cannot be undone.',
+                Text(
+                  s.cancelReasonPrompt,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
+                  style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
                 ),
                 const SizedBox(height: 20),
 
@@ -121,7 +123,7 @@ class _CancelDialogState extends State<_CancelDialog> {
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submit(),
                   decoration: InputDecoration(
-                    hintText: 'e.g. Out of stock, customer request…',
+                    hintText: s.cancelReasonHint,
                     hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                     filled: true,
                     fillColor: AppTheme.surfaceAlt,
@@ -147,7 +149,7 @@ class _CancelDialogState extends State<_CancelDialog> {
                   children: [
                     Expanded(
                       child: _DialogButton(
-                        label: 'Keep Order',
+                        label: s.keepOrder,
                         onTap: () => Navigator.of(context).pop(),
                         filled: false,
                       ),

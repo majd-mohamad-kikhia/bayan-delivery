@@ -100,7 +100,7 @@ void main() {
     expect(listing.pickupPrice, 4);
     repository.answer(
       'keeta',
-      const PublishOutcome(PublishPhase.published, 'ok'),
+      const PublishOutcome(PublishPhase.published, PublishNotice.added),
     );
   });
 
@@ -123,7 +123,7 @@ void main() {
 
       repository.answer(
         'keeta',
-        const PublishOutcome(PublishPhase.published, 'Added to Keeta'),
+        const PublishOutcome(PublishPhase.published, PublishNotice.added),
       );
       await settle();
       expect(phaseOf('keeta'), PublishPhase.published);
@@ -131,12 +131,18 @@ void main() {
 
       repository.answer(
         'hungerstation',
-        const PublishOutcome.failed('No vendor'),
+        const PublishOutcome.failed(PublishNotice.error, 'No vendor'),
       );
       await submit;
       expect(phaseOf('hungerstation'), PublishPhase.failed);
       expect(cubit.state.status, PublishProductStatus.editing);
-      expect(cubit.state.errorMessage, 'HungerStation: No vendor');
+      expect(
+        cubit.state.error,
+        const PlatformPublishFailed(
+          'hungerstation',
+          PublishOutcome.failed(PublishNotice.error, 'No vendor'),
+        ),
+      );
       expect(cubit.state.canSubmit, isTrue);
 
       final retry = cubit.submit();
@@ -149,14 +155,12 @@ void main() {
 
       repository.answer(
         'hungerstation',
-        const PublishOutcome(PublishPhase.processing, 'still processing'),
+        const PublishOutcome(PublishPhase.processing, PublishNotice.processing),
       );
       await retry;
       expect(cubit.state.status, PublishProductStatus.success);
-      expect(
-        cubit.state.resultSummary,
-        'Added to Keeta · still processing on HungerStation',
-      );
+      expect(cubit.state.publishedPlatformIds, ['keeta']);
+      expect(cubit.state.processingPlatformIds, ['hungerstation']);
     },
   );
 
@@ -168,7 +172,7 @@ void main() {
     expect(repository.calls, hasLength(1));
     repository.answer(
       'keeta',
-      const PublishOutcome(PublishPhase.published, 'ok'),
+      const PublishOutcome(PublishPhase.published, PublishNotice.added),
     );
   });
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../../core/platforms/hungerstation/hs_types.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../l10n/products_strings.dart';
 import 'add_product_field.dart';
 
 /// Form fields for the publish screen. Each owns its controller and only
@@ -191,6 +192,7 @@ class ListingNumberField extends StatelessWidget {
       label: label,
       initial: format(initial),
       hint: hint,
+      textDirection: TextDirection.ltr,
       keyboardType: TextInputType.numberWithOptions(decimal: decimal),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(decimal ? r'[\d.]' : r'\d')),
@@ -274,7 +276,7 @@ class _ListingCategoryFieldState extends State<ListingCategoryField> {
       },
       optionsViewBuilder: (context, onSelected, options) {
         return Align(
-          alignment: Alignment.topLeft,
+          alignment: AlignmentDirectional.topStart,
           child: Material(
             elevation: 4,
             borderRadius: BorderRadius.circular(10),
@@ -336,6 +338,7 @@ class _ListingWeightFieldState extends State<ListingWeightField> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -356,7 +359,7 @@ class _ListingWeightFieldState extends State<ListingWeightField> {
           style: const ButtonStyle(visualDensity: VisualDensity.compact),
           segments: [
             for (final unit in HsWeightUnit.values)
-              ButtonSegment(value: unit, label: Text(unit.wire)),
+              ButtonSegment(value: unit, label: Text(s.weightUnit(unit))),
           ],
           selected: {_unit},
           onSelectionChanged: (selection) {

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../../core/localization/locale_context.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/theme/platform_colors.dart';
 import '../../../data/models/listing_models.dart';
 import '../../../data/repositories/product_publish_repository.dart';
 import '../../cubit/publish_product_cubit.dart';
 import '../../cubit/publish_product_state.dart';
+import '../../l10n/products_strings.dart';
 import 'hs_listing_fields.dart';
 import 'keeta_listing_fields.dart';
 
@@ -66,6 +68,7 @@ class _PanelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     return Row(
       children: [
         Container(
@@ -82,21 +85,21 @@ class _PanelHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Publish to platforms',
-                style: TextStyle(
+                s.publishToPlatforms,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
                 ),
               ),
               Text(
-                'Choose where this product goes live',
-                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                s.publishToPlatformsSubtitle,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
               ),
             ],
           ),
@@ -104,11 +107,11 @@ class _PanelHeader extends StatelessWidget {
         TextButton(
           onPressed: () =>
               context.read<PublishProductCubit>().selectAllPlatforms(),
-          child: const Text('Select all', style: TextStyle(fontSize: 12)),
+          child: Text(s.selectAll, style: const TextStyle(fontSize: 12)),
         ),
         TextButton(
           onPressed: () => context.read<PublishProductCubit>().clearPlatforms(),
-          child: const Text('Clear', style: TextStyle(fontSize: 12)),
+          child: Text(s.clear, style: const TextStyle(fontSize: 12)),
         ),
       ],
     );
@@ -121,22 +124,30 @@ class PlatformTargetCard extends StatelessWidget {
   final PlatformPublishDraft draft;
 
   /// Status line under the platform name, and its color.
-  (String, Color) _status(Color accent) => switch (draft.phase) {
-    _ when !draft.enabled => ('Not selected', AppTheme.textMuted),
-    PublishPhase.idle => ('Ready to publish', accent),
-    PublishPhase.publishing => ('Publishing…', accent),
-    PublishPhase.published => ('Published', const Color(0xFF059669)),
-    PublishPhase.processing => (
-      draft.resultMessage ?? 'Processing…',
-      const Color(0xFFD97706),
-    ),
-    PublishPhase.failed => (draft.resultMessage ?? 'Failed', AppTheme.coral),
-  };
+  (String, Color) _status(ProductsStrings s, String platform, Color accent) {
+    final result = draft.result;
+    String resultText(String fallback) => result == null
+        ? fallback
+        : s.publishNotice(result.notice, platform, result.detail);
+    return switch (draft.phase) {
+      _ when !draft.enabled => (s.notSelected, AppTheme.textMuted),
+      PublishPhase.idle => (s.readyToPublish, accent),
+      PublishPhase.publishing => (s.publishing, accent),
+      PublishPhase.published => (s.published, const Color(0xFF059669)),
+      PublishPhase.processing => (
+        resultText(s.processing),
+        const Color(0xFFD97706),
+      ),
+      PublishPhase.failed => (resultText(s.failed), AppTheme.coral),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
+    final platform = context.commonStrings.platformName(draft.platformId);
     final color = PlatformColors.of(draft.platformId);
-    final (statusText, statusColor) = _status(color);
+    final (statusText, statusColor) = _status(s, platform, color);
     final locked = draft.phase == PublishPhase.publishing;
 
     return AnimatedContainer(
@@ -164,7 +175,7 @@ class PlatformTargetCard extends StatelessWidget {
                     !draft.enabled,
                   ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+              padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 10, 12),
               child: Row(
                 children: [
                   Container(
@@ -181,7 +192,7 @@ class PlatformTargetCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          draft.label,
+                          platform,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -278,7 +289,7 @@ class _PublishSummary extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Text(
-                '$selected of $total platforms',
+                context.productsStrings.platformsSelected(selected, total),
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

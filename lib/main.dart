@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_shell.dart';
 import 'core/constants/app_constants.dart';
 import 'core/database/app_database.dart';
+import 'core/localization/app_language.dart';
+import 'core/localization/locale_context.dart';
+import 'core/localization/locale_cubit.dart';
 import 'core/network/api_client.dart';
 import 'core/network/bayan_erp_client.dart';
 import 'core/platforms/platform_apis.dart';
@@ -95,6 +99,7 @@ class BayanDesktopApp extends StatelessWidget {
       ],
       child: MultiBlocProvider(
         providers: [
+          BlocProvider(create: (_) => LocaleCubit(preferences)),
           BlocProvider(
             create: (_) => OrdersBloc(
               repository: ordersRepository,
@@ -119,13 +124,34 @@ class BayanDesktopApp extends StatelessWidget {
             ),
           ),
         ],
-        child: MaterialApp(
-          title: AppConstants.appName,
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          home: const AppShell(),
-        ),
+        child: const _LocalizedApp(),
       ),
+    );
+  }
+}
+
+/// Only this subtree rebuilds when the language changes; blocs and
+/// repositories above it are untouched.
+class _LocalizedApp extends StatelessWidget {
+  const _LocalizedApp();
+
+  static const _delegates = <LocalizationsDelegate<dynamic>>[
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final language = context.watch<LocaleCubit>().state;
+    return MaterialApp(
+      onGenerateTitle: (context) => context.commonStrings.appName,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      locale: language.locale,
+      supportedLocales: AppLanguage.supportedLocales,
+      localizationsDelegates: _delegates,
+      home: const AppShell(),
     );
   }
 }

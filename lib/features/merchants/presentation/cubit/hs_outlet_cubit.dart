@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/app_error.dart';
 import '../../../../core/storage/app_preferences.dart';
 import '../../data/models/hs_vendor_status_model.dart';
 import '../../data/repositories/merchants_repository.dart';
@@ -13,7 +14,7 @@ final class HsOutletState extends Equatable {
     this.vendorStatus,
     this.dongleNumber = '',
     this.isUpdating = false,
-    this.errorMessage,
+    this.error,
     this.actionError,
   });
 
@@ -21,17 +22,17 @@ final class HsOutletState extends Equatable {
   final HsVendorStatusModel? vendorStatus;
   final String dongleNumber;
   final bool isUpdating;
-  final String? errorMessage;
-  final String? actionError;
+  final AppError? error;
+  final AppError? actionError;
 
   HsOutletState copyWith({
     HsOutletLoadStatus? status,
     HsVendorStatusModel? vendorStatus,
     String? dongleNumber,
     bool? isUpdating,
-    String? errorMessage,
+    AppError? error,
     bool clearError = false,
-    String? actionError,
+    AppError? actionError,
     bool clearActionError = false,
   }) {
     return HsOutletState(
@@ -39,7 +40,7 @@ final class HsOutletState extends Equatable {
       vendorStatus: vendorStatus ?? this.vendorStatus,
       dongleNumber: dongleNumber ?? this.dongleNumber,
       isUpdating: isUpdating ?? this.isUpdating,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      error: clearError ? null : (error ?? this.error),
       actionError: clearActionError ? null : (actionError ?? this.actionError),
     );
   }
@@ -50,7 +51,7 @@ final class HsOutletState extends Equatable {
         vendorStatus,
         dongleNumber,
         isUpdating,
-        errorMessage,
+        error,
         actionError,
       ];
 }
@@ -83,7 +84,7 @@ class HsOutletCubit extends Cubit<HsOutletState> {
     } catch (e) {
       emit(state.copyWith(
         status: HsOutletLoadStatus.failure,
-        errorMessage: e.toString(),
+        error: AppError.from(e),
       ));
     }
   }
@@ -107,7 +108,7 @@ class HsOutletCubit extends Cubit<HsOutletState> {
       );
       emit(state.copyWith(vendorStatus: updated, isUpdating: false));
     } catch (e) {
-      emit(state.copyWith(actionError: e.toString(), isUpdating: false));
+      emit(state.copyWith(actionError: AppError.from(e), isUpdating: false));
     }
   }
 

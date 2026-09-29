@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../data/models/agent_model.dart';
 import '../../data/models/customer_model.dart';
 import '../../data/models/erp_product_model.dart';
@@ -60,13 +61,13 @@ final class BayanErpState extends Equatable {
   final BayanErpStatus customersStatus;
   final List<CustomerModel> customers;
   final int customersPage;
-  final String? customersError;
+  final AppError? customersError;
 
   // ── Products ───────────────────────────────────────────────────────────────
   final BayanErpStatus productsStatus;
   final List<ErpProductModel> products;
   final int productsPage;
-  final String? productsError;
+  final AppError? productsError;
   final int productsPageSize;
 
   /// Client-side filters applied to the currently loaded products page.
@@ -76,7 +77,7 @@ final class BayanErpState extends Equatable {
   // ── Salesmen ───────────────────────────────────────────────────────────────
   final BayanErpStatus salesmenStatus;
   final List<SalesmanModel> salesmen;
-  final String? salesmenError;
+  final AppError? salesmenError;
 
   // ── Agents ─────────────────────────────────────────────────────────────────
   final BayanErpStatus agentsStatus;
@@ -84,12 +85,12 @@ final class BayanErpState extends Equatable {
 
   /// The `/getAgent` endpoint uses 1-based page numbers (`number` param).
   final int agentsPage;
-  final String? agentsError;
+  final AppError? agentsError;
 
   // ── Stores ─────────────────────────────────────────────────────────────────
   final BayanErpStatus storesStatus;
   final List<StoreModel> stores;
-  final String? storesError;
+  final AppError? storesError;
 
   // ─── Computed helpers ─────────────────────────────────────────────────────
 
@@ -162,13 +163,13 @@ final class BayanErpState extends Equatable {
     BayanErpStatus? customersStatus,
     List<CustomerModel>? customers,
     int? customersPage,
-    String? customersError,
+    AppError? customersError,
     bool clearCustomersError = false,
     // Products
     BayanErpStatus? productsStatus,
     List<ErpProductModel>? products,
     int? productsPage,
-    String? productsError,
+    AppError? productsError,
     bool clearProductsError = false,
     int? productsPageSize,
     String? productsQuery,
@@ -177,18 +178,18 @@ final class BayanErpState extends Equatable {
     // Salesmen
     BayanErpStatus? salesmenStatus,
     List<SalesmanModel>? salesmen,
-    String? salesmenError,
+    AppError? salesmenError,
     bool clearSalesmenError = false,
     // Agents
     BayanErpStatus? agentsStatus,
     List<AgentModel>? agents,
     int? agentsPage,
-    String? agentsError,
+    AppError? agentsError,
     bool clearAgentsError = false,
     // Stores
     BayanErpStatus? storesStatus,
     List<StoreModel>? stores,
-    String? storesError,
+    AppError? storesError,
     bool clearStoresError = false,
   }) =>
       BayanErpState(

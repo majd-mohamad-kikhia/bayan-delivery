@@ -6,6 +6,8 @@ class AppTheme {
   // ── Brand ──────────────────────────────────────────────────────────────
   static const Color primary = Color(0xFF3D5AFE);
   static const Color coral = Color(0xFFFF6B6B);
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
 
   // ── Main content ───────────────────────────────────────────────────────
   static const Color background = Color(0xFFF1F5F9);
@@ -38,6 +40,15 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: background,
       cardTheme: const CardThemeData(color: surface, elevation: 0, margin: EdgeInsets.zero),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: sidebarBg,
+        elevation: 6,
+        insetPadding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
+        closeIconColor: sidebarText,
+      ),
       textTheme: const TextTheme(
         titleMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
         titleSmall: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),

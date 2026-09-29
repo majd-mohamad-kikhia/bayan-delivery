@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/platform_colors.dart';
 
@@ -16,13 +17,15 @@ class PlatformTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final common = context.commonStrings;
     return Row(
       children: [
         for (final platform in PlatformColors.all)
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsetsDirectional.only(end: 8),
             child: _PlatformPill(
               platform: platform,
+              label: common.platformName(platform),
               isSelected: selected == platform,
               onTap: () => onChanged(platform),
             ),
@@ -35,11 +38,13 @@ class PlatformTabs extends StatelessWidget {
 class _PlatformPill extends StatelessWidget {
   const _PlatformPill({
     required this.platform,
+    required this.label,
     required this.isSelected,
     required this.onTap,
   });
 
   final String platform;
+  final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -59,7 +64,7 @@ class _PlatformPill extends StatelessWidget {
           ),
         ),
         child: Text(
-          PlatformColors.label(platform),
+          label,
           style: TextStyle(
             color: isSelected ? Colors.white : AppTheme.textSecondary,
             fontSize: 13,

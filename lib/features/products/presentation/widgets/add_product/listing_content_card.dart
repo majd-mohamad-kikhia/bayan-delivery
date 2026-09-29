@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../data/models/listing_models.dart';
 import '../../cubit/publish_product_cubit.dart';
+import '../../l10n/products_strings.dart';
 import 'listing_form_fields.dart';
 
 /// Fields every platform gets: names, descriptions, images, barcode.
@@ -14,6 +15,7 @@ class ListingContentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     final cubit = context.read<PublishProductCubit>();
     // Read once: the fields own their text from here on.
     final content = cubit.state.content;
@@ -33,12 +35,13 @@ class ListingContentCard extends StatelessWidget {
           const SizedBox(height: 16),
           ListingPair(
             ListingTextField(
-              label: 'Name (English) *',
+              label: s.nameEnRequired,
               initial: content.nameEn,
+              textDirection: TextDirection.ltr,
               onChanged: (v) => update((c) => c.copyWith(nameEn: v)),
             ),
             ListingTextField(
-              label: 'Name (Arabic)',
+              label: s.nameAr,
               initial: content.nameAr,
               textDirection: TextDirection.rtl,
               onChanged: (v) => update((c) => c.copyWith(nameAr: v)),
@@ -46,15 +49,16 @@ class ListingContentCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           ListingTextField(
-            label: 'Description (English)',
+            label: s.descriptionEn,
             initial: content.descriptionEn,
             maxLines: 3,
-            hint: 'Size, ingredients, what’s in the pack…',
+            hint: s.descriptionEnHint,
+            textDirection: TextDirection.ltr,
             onChanged: (v) => update((c) => c.copyWith(descriptionEn: v)),
           ),
           const SizedBox(height: 10),
           ListingTextField(
-            label: 'Description (Arabic)',
+            label: s.descriptionAr,
             initial: content.descriptionAr,
             maxLines: 3,
             textDirection: TextDirection.rtl,
@@ -62,20 +66,22 @@ class ListingContentCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           ListingTextField(
-            label: 'Barcode (GTIN)',
+            label: s.barcodeGtin,
             initial: content.barcode,
-            hint: 'Required on HungerStation unless sold by weight',
+            hint: s.barcodeHint,
             keyboardType: TextInputType.number,
+            textDirection: TextDirection.ltr,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             onChanged: (v) => update((c) => c.copyWith(barcode: v.trim())),
           ),
           const SizedBox(height: 10),
           ListingTextField(
-            label: 'Image URLs (one per line)',
+            label: s.imageUrls,
             initial: content.imageUrls.join('\n'),
             maxLines: 3,
             hint: 'https://…/product.jpg',
             keyboardType: TextInputType.url,
+            textDirection: TextDirection.ltr,
             onChanged: (v) => update(
               (c) => c.copyWith(
                 imageUrls: [
@@ -86,10 +92,9 @@ class ListingContentCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'JPG or PNG, publicly reachable. Keeta: at least 600×450, up to 5 MB. '
-            'HungerStation: at least 400×400, white background, product centered.',
-            style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+          Text(
+            s.imageGuidelines,
+            style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
           ),
         ],
       ),
@@ -102,6 +107,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     return Row(
       children: [
         Container(
@@ -118,21 +124,21 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Listing details',
-                style: TextStyle(
+                s.listingDetails,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
                 ),
               ),
               Text(
-                'What customers see on every platform',
-                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                s.listingDetailsSubtitle,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
               ),
             ],
           ),

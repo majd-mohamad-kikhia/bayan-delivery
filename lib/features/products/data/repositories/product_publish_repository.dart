@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:equatable/equatable.dart';
+
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/platforms/common/platform_utils.dart';
 import '../../../../core/platforms/platforms.dart';
@@ -22,15 +24,81 @@ enum PublishPhase {
   bool get isDone => this == published || this == processing;
 }
 
-/// Result of publishing one product to one platform. Never an exception:
-/// every failure becomes a readable [message].
-final class PublishOutcome {
-  const PublishOutcome(this.phase, this.message);
+/// What happened when publishing to one platform; the UI words it.
+enum PublishNotice {
+  /// Live on the platform.
+  added,
 
-  const PublishOutcome.failed(this.message) : phase = PublishPhase.failed;
+  /// Live, but no product id came back to attach the images to.
+  addedWithoutImages,
+
+  /// Live, but the images were refused ([PublishOutcome.detail]: why).
+  addedImagesRejected,
+
+  /// Live on HungerStation, but availability and stock weren't applied:
+  /// no default vendor (`HS_VENDOR_ID`) is configured.
+  addedWithoutStock,
+
+  /// Accepted; the platform is still processing it.
+  processing,
+
+  /// Failed with the platform's or network's own words in the detail.
+  error,
+
+  /// The platform refused the product (detail: its reason, if any).
+  rejected,
+
+  /// No platform category has the name in the detail.
+  unknownCategory,
+  noJobId,
+
+  /// The category in the detail was created but its id never came back.
+  categoryNotCreated,
+  noShop,
+  severalShops,
+
+  // Checked before any request.
+  nameRequired,
+  priceRequired,
+  pickupPriceRequired,
+  categoryRequired,
+  sellingHoursRequired,
+  servingSizeOutOfRange,
+  caffeineNegative,
+  nutritionNegative,
+
+  /// The offending URL is the detail.
+  invalidImageUrl,
+  barcodeRequired,
+  baseWeightRequired,
+  stockNegative,
+  maxPerOrderTooLow,
+}
+
+/// Result of publishing one product to one platform. Never an exception:
+/// every failure becomes a [notice], plus the platform's own text or the
+/// offending value in [detail] when there is one.
+final class PublishOutcome extends Equatable {
+  const PublishOutcome(this.phase, this.notice, [this.detail]);
+
+  const PublishOutcome.failed(this.notice, [this.detail])
+    : phase = PublishPhase.failed;
 
   final PublishPhase phase;
-  final String message;
+  final PublishNotice notice;
+  final String? detail;
+
+  @override
+  List<Object?> get props => [phase, notice, detail];
+}
+
+/// Stops a publish with a [PublishNotice]; [ProductPublishRepository.publish]
+/// turns it into a failed [PublishOutcome].
+final class _PublishStop implements Exception {
+  const _PublishStop(this.notice, [this.detail]);
+
+  final PublishNotice notice;
+  final String? detail;
 }
 
 /// Publishes Al-Bayan products to delivery platforms, sending exactly the
@@ -110,10 +178,12 @@ class ProductPublishRepository {
         KeetaListing() => await _publishToKeeta(content, listing),
         HsListing() => await _publishToHungerStation(content, listing),
       };
+    } on _PublishStop catch (e) {
+      return PublishOutcome.failed(e.notice, e.detail);
     } on ApiException catch (e) {
-      return PublishOutcome.failed(e.message);
+      return PublishOutcome.failed(PublishNotice.error, e.message);
     } on ArgumentError catch (e) {
-      return PublishOutcome.failed('${e.message}');
+      return PublishOutcome.failed(PublishNotice.error, '${e.message}');
     }
   }
 
@@ -132,15 +202,16 @@ class ProductPublishRepository {
       spuList: [keetaSpu(content, listing, categoryId)],
     );
     if (response.hasPartialFailure) {
-      return PublishOutcome.failed(
-        _describe(response.errorList.first) ?? 'Keeta rejected the product.',
-      );
+      final reason = _describe(response.errorList.first);
+      return reason == null
+          ? const PublishOutcome.failed(PublishNotice.rejected)
+          : PublishOutcome.failed(PublishNotice.error, reason);
     }
 
     // External image URLs can't go in the create call; bind them to the
     // new SPU (Keeta fetches them asynchronously, errors → webhook 1201).
     if (content.imageUrls.isEmpty) {
-      return const PublishOutcome(PublishPhase.published, 'Added to Keeta');
+      return const PublishOutcome(PublishPhase.published, PublishNotice.added);
     }
     final spuId = response.dataList
         .where((spu) => spu['openItemCode'] == content.sku)
@@ -150,7 +221,7 @@ class ProductPublishRepository {
     if (spuId == null) {
       return const PublishOutcome(
         PublishPhase.published,
-        'Added to Keeta · images not attached (no product id returned)',
+        PublishNotice.addedWithoutImages,
       );
     }
     try {
@@ -161,49 +232,39 @@ class ProductPublishRepository {
       if (bind.hasPartialFailure) {
         return PublishOutcome(
           PublishPhase.published,
-          'Added to Keeta · images: ${_describe(bind.errorList) ?? 'rejected'}',
+          PublishNotice.addedImagesRejected,
+          _describe(bind.errorList),
         );
       }
     } on ApiException catch (e) {
       return PublishOutcome(
         PublishPhase.published,
-        'Added to Keeta · images: ${e.message}',
+        PublishNotice.addedImagesRejected,
+        e.message,
       );
     }
-    return const PublishOutcome(PublishPhase.published, 'Added to Keeta');
+    return const PublishOutcome(PublishPhase.published, PublishNotice.added);
   }
 
   void _validateKeeta(ListingContent content, KeetaListing listing) {
     _requireName(content);
-    _requirePrice(listing.price, 'Price');
-    checkArgument(
-      listing.category.trim().isNotEmpty,
-      'category',
-      'Keeta needs a menu category',
-    );
+    _requirePrice(listing.price, PublishNotice.priceRequired);
+    _check(listing.category.trim().isNotEmpty, PublishNotice.categoryRequired);
     if (listing.limitedHours) {
-      checkArgument(
-        listing.sellingHours != null,
-        'sellingHours',
-        'Enter the selling hours as HH:mm – HH:mm',
-      );
+      _check(listing.sellingHours != null, PublishNotice.sellingHoursRequired);
     }
-    if (listing.pickup) _requirePrice(listing.pickupPrice, 'Pickup price');
+    if (listing.pickup) {
+      _requirePrice(listing.pickupPrice, PublishNotice.pickupPriceRequired);
+    }
     final serving = listing.servingSize;
-    checkArgument(
+    _check(
       serving == null || (serving >= 1 && serving <= 9),
-      'servingSize',
-      'Serving size must be 1 to 9 people',
+      PublishNotice.servingSizeOutOfRange,
     );
-    checkArgument(
-      (listing.caffeineMg ?? 0) >= 0,
-      'caffeine',
-      'Caffeine cannot be negative',
-    );
-    checkArgument(
+    _check((listing.caffeineMg ?? 0) >= 0, PublishNotice.caffeineNegative);
+    _check(
       listing.nutrition.values.every((value) => value >= 0),
-      'nutrition',
-      'Nutrition values cannot be negative',
+      PublishNotice.nutritionNegative,
     );
     _requireImageUrls(content.imageUrls);
   }
@@ -290,16 +351,8 @@ class ProductPublishRepository {
     if (selected != null) return selected;
     return _keetaShop.get('default', () async {
       final shops = await _apis.keeta.account.authorizedShops();
-      checkArgument(
-        shops.isNotEmpty,
-        'shop',
-        'No Keeta shop is authorized for this account',
-      );
-      checkArgument(
-        shops.length == 1,
-        'shop',
-        'Several Keeta shops — choose one in Merchants first',
-      );
+      _check(shops.isNotEmpty, PublishNotice.noShop);
+      _check(shops.length == 1, PublishNotice.severalShops);
       return (shops.single['id'] as num).toInt();
     });
   }
@@ -348,7 +401,7 @@ class ProductPublishRepository {
       _keetaCategories.invalidate('$shopId');
       final created = (await _keetaCategoryIndex(shopId)).idOf(name);
       if (created == null) {
-        throw ArgumentError('Keeta did not return the new category "$name"');
+        throw _PublishStop(PublishNotice.categoryNotCreated, name);
       }
       return created;
     });
@@ -372,9 +425,7 @@ class ProductPublishRepository {
           taxonomy.idOf(category) ??
           (await _hsCategories(refresh: true)).idOf(category);
       if (categoryId == null) {
-        return PublishOutcome.failed(
-          'HungerStation has no category named "$category".',
-        );
+        return PublishOutcome.failed(PublishNotice.unknownCategory, category);
       }
     }
 
@@ -383,36 +434,34 @@ class ProductPublishRepository {
       products: [hsProduct(content, listing, taxonomy, categoryId)],
     );
     if (job.id.isEmpty) {
-      return const PublishOutcome.failed(
-        'HungerStation did not return a job id.',
-      );
+      return const PublishOutcome.failed(PublishNotice.noJobId);
     }
 
     final result = await hs.waitForCatalogJob(job.id, timeout: hsJobTimeout);
     if (result.isFailed) {
-      return PublishOutcome.failed(
-        result.rejectionFor(content.sku) ??
-            _describe(result.raw['result']) ??
-            'HungerStation could not add the product.',
-      );
+      final reason =
+          result.rejectionFor(content.sku) ?? _describe(result.raw['result']);
+      return reason == null
+          ? const PublishOutcome.failed(PublishNotice.rejected)
+          : PublishOutcome.failed(PublishNotice.error, reason);
     }
     if (!result.isCompleted) {
       return const PublishOutcome(
         PublishPhase.processing,
-        'HungerStation is still processing it',
+        PublishNotice.processing,
       );
     }
     // A completed job can still reject this product (e.g. images: poor quality).
     final rejection = result.rejectionFor(content.sku);
     if (rejection != null) {
-      return PublishOutcome.failed('HungerStation rejected it — $rejection');
+      return PublishOutcome.failed(PublishNotice.rejected, rejection);
     }
 
     // Availability and stock aren't part of the add call.
     if (vendorId.isEmpty) {
       return const PublishOutcome(
         PublishPhase.published,
-        'Added to HungerStation · set HS_VENDOR_ID to apply availability and stock',
+        PublishNotice.addedWithoutStock,
       );
     }
     await hs.updateProducts(
@@ -425,36 +474,26 @@ class ProductPublishRepository {
         ),
       ],
     );
-    return const PublishOutcome(
-      PublishPhase.published,
-      'Added to HungerStation',
-    );
+    return const PublishOutcome(PublishPhase.published, PublishNotice.added);
   }
 
   void _validateHungerStation(ListingContent content, HsListing listing) {
     _requireName(content);
-    _requirePrice(listing.price, 'Price');
-    checkArgument(
+    _requirePrice(listing.price, PublishNotice.priceRequired);
+    _check(
       listing.soldByWeight || content.barcode.trim().isNotEmpty,
-      'barcode',
-      'HungerStation needs a barcode unless the product is sold by weight',
+      PublishNotice.barcodeRequired,
     );
     if (listing.soldByWeight) {
-      checkArgument(
+      _check(
         (listing.baseWeight?.value ?? 0) > 0,
-        'baseWeight',
-        'Enter the base weight the price applies to',
+        PublishNotice.baseWeightRequired,
       );
     }
-    checkArgument(
-      (listing.quantity ?? 0) >= 0,
-      'quantity',
-      'Stock cannot be negative',
-    );
-    checkArgument(
+    _check((listing.quantity ?? 0) >= 0, PublishNotice.stockNegative);
+    _check(
       listing.maxPerOrder == null || listing.maxPerOrder! >= 1,
-      'maxPerOrder',
-      'Max per order must be at least 1',
+      PublishNotice.maxPerOrderTooLow,
     );
     _requireImageUrls(content.imageUrls);
   }
@@ -508,28 +547,28 @@ class ProductPublishRepository {
 
   // ── Shared checks & helpers ───────────────────────────────────────────────
 
-  static void _requireName(ListingContent content) => checkArgument(
+  static void _check(bool condition, PublishNotice notice, [String? detail]) {
+    if (!condition) throw _PublishStop(notice, detail);
+  }
+
+  static void _requireName(ListingContent content) => _check(
     content.nameEn.trim().isNotEmpty || content.nameAr.trim().isNotEmpty,
-    'name',
-    'Enter a product name',
+    PublishNotice.nameRequired,
   );
 
-  static void _requirePrice(double? price, String label) => checkArgument(
-    price != null && price > 0,
-    'price',
-    '$label must be greater than 0',
-  );
+  static void _requirePrice(double? price, PublishNotice notice) =>
+      _check(price != null && price > 0, notice);
 
   static void _requireImageUrls(List<String> urls) {
     for (final url in urls) {
       final uri = Uri.tryParse(url);
-      checkArgument(
+      _check(
         uri != null &&
             (uri.scheme == 'https' || uri.scheme == 'http') &&
             uri.host.isNotEmpty &&
             !uri.hasPort,
-        'imageUrls',
-        'Image URLs must be http(s) links without a custom port: $url',
+        PublishNotice.invalidImageUrl,
+        url,
       );
     }
   }

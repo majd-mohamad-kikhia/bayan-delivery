@@ -7,6 +7,7 @@ class AppPreferences {
 
   static const _dongleKey = 'dongle_number';
   static const _keetaShopIdKey = 'keeta_shop_id';
+  static const _languageKey = 'language_code';
 
   final SharedPreferences _prefs;
 
@@ -25,4 +26,8 @@ class AppPreferences {
   }
 
   Future<void> setKeetaShopId(int shopId) => _prefs.setInt(_keetaShopIdKey, shopId);
+
+  String? get languageCode => _prefs.getString(_languageKey);
+
+  Future<void> setLanguageCode(String code) => _prefs.setString(_languageKey, code);
 }

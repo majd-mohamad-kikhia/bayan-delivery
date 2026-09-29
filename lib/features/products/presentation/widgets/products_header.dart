@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
+import '../l10n/products_strings.dart';
 
 class ProductsHeader extends StatelessWidget {
   const ProductsHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
       decoration: const BoxDecoration(
@@ -29,38 +32,33 @@ class ProductsHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Products',
-                  style: TextStyle(
+                  s.productsTitle,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Al-Bayan catalog',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  s.catalogSubtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
               ],
             ),
           ),
           OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  const SnackBar(
-                    content: Text('Sync with Al-Bayan will be available soon.'),
-                  ),
-                );
-            },
+            onPressed: () => AppSnackBar.info(context, s.syncComingSoon),
             icon: const Icon(Icons.sync, size: 16),
-            label: const Text('Sync Al-Bayan'),
+            label: Text(s.syncAlBayan),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.primary,
               side: const BorderSide(color: Color(0xFFC7D2FE)),

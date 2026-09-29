@@ -14,7 +14,7 @@ class OrdersRepository {
       '/api/orders',
       query: {
         'dongleNumber': dongleNumber,
-        if (platform != null) 'platform': platform,
+        'platform': ?platform,
       },
     );
     final list = (data['orders'] as List? ?? const []).cast<Map<String, dynamic>>();

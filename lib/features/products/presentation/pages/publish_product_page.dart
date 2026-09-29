@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/localization/common_strings.dart';
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 import '../../data/models/product_model.dart';
 import '../../data/repositories/product_publish_repository.dart';
 import '../cubit/publish_product_cubit.dart';
 import '../cubit/publish_product_state.dart';
+import '../l10n/products_strings.dart';
 import '../widgets/add_product/listing_content_card.dart';
 import '../widgets/add_product/platform_targets_panel.dart';
 import '../widgets/add_product/product_summary_card.dart';
@@ -38,32 +42,60 @@ class _PublishProductView extends StatelessWidget {
 
   final VoidCallback onClose;
 
+  static String _errorText(
+    PublishProductError error,
+    ProductsStrings s,
+    CommonStrings common,
+  ) {
+    switch (error) {
+      case NoPlatformSelected():
+        return s.noPlatformSelected;
+      case PlatformsPublishFailed(:final count):
+        return s.platformsFailed(count);
+      case PlatformPublishFailed(:final platformId, :final outcome):
+        final platform = common.platformName(platformId);
+        return s.platformFailed(
+          platform,
+          s.publishNotice(outcome.notice, platform, outcome.detail),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<PublishProductCubit, PublishProductState>(
-      listenWhen: (p, c) =>
-          p.status != c.status || p.errorMessage != c.errorMessage,
+      listenWhen: (p, c) => p.status != c.status || p.error != c.error,
       listener: (context, state) {
-        if (state.errorMessage != null &&
-            state.status == PublishProductStatus.failure) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: AppTheme.coral,
-              ),
+        final s = context.productsStrings;
+        final common = context.commonStrings;
+        final error = state.error;
+        if (error != null && state.status == PublishProductStatus.failure) {
+          if (error is NoPlatformSelected) {
+            AppSnackBar.info(context, s.noPlatformSelected);
+          } else {
+            AppSnackBar.error(
+              context,
+              title: s.publishFailedTitle,
+              message: _errorText(error, s, common),
             );
+          }
         }
         if (state.status == PublishProductStatus.success) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text('${state.product.name}: ${state.resultSummary}'),
-                backgroundColor: const Color(0xFF059669),
-              ),
-            );
+          AppSnackBar.success(
+            context,
+            s.publishedTitle,
+            message: s.publishSucceeded(
+              state.product.name,
+              [
+                for (final id in state.publishedPlatformIds)
+                  common.platformName(id),
+              ],
+              [
+                for (final id in state.processingPlatformIds)
+                  common.platformName(id),
+              ],
+            ),
+          );
           onClose();
         }
       },
@@ -158,8 +190,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 16, 12),
       decoration: const BoxDecoration(
         color: AppTheme.surface,
         border: Border(bottom: BorderSide(color: AppTheme.border)),
@@ -169,7 +202,7 @@ class _Header extends StatelessWidget {
           IconButton(
             onPressed: submitting ? null : onClose,
             icon: const Icon(Icons.arrow_back_rounded, size: 20),
-            tooltip: 'Back to Al-Bayan products',
+            tooltip: s.backToProducts,
             color: AppTheme.textSecondary,
           ),
           const SizedBox(width: 4),
@@ -177,9 +210,9 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Add to platforms',
-                  style: TextStyle(
+                Text(
+                  s.addToPlatforms,
+                  style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
@@ -204,7 +237,7 @@ class _Header extends StatelessWidget {
               side: const BorderSide(color: AppTheme.border),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            child: const Text('Cancel'),
+            child: Text(context.commonStrings.cancel),
           ),
           const SizedBox(width: 8),
           BlocSelector<PublishProductCubit, PublishProductState, bool>(
@@ -222,7 +255,7 @@ class _Header extends StatelessWidget {
                         ),
                       )
                     : const Icon(Icons.add_to_photos_outlined, size: 18),
-                label: Text(submitting ? 'Adding…' : 'Add to platforms'),
+                label: Text(submitting ? s.adding : s.addToPlatforms),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   disabledBackgroundColor: AppTheme.primary.withValues(

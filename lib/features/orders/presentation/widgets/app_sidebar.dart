@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/navigation/app_section.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/language_switcher.dart';
 import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
+import '../l10n/orders_strings.dart';
 import 'dongle_settings_dialog.dart';
 
 class AppSidebar extends StatelessWidget {
@@ -23,6 +26,7 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ordersActive = section == AppSection.orders;
+    final s = context.ordersStrings;
 
     return Container(
       width: 220,
@@ -41,7 +45,7 @@ class AppSidebar extends StatelessWidget {
               children: [
                 _NavItem(
                   icon: Icons.dashboard_outlined,
-                  label: 'Live Kanban',
+                  label: s.liveKanban,
                   isActive: ordersActive && !state.showHistory,
                   onTap: () {
                     onSectionChanged(AppSection.orders);
@@ -52,7 +56,7 @@ class AppSidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.history_outlined,
-                  label: 'Order Archive',
+                  label: s.orderArchive,
                   isActive: ordersActive && state.showHistory,
                   onTap: () {
                     onSectionChanged(AppSection.orders);
@@ -63,13 +67,13 @@ class AppSidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.inventory_2_outlined,
-                  label: 'Products',
+                  label: s.products,
                   isActive: section == AppSection.products,
                   onTap: () => onSectionChanged(AppSection.products),
                 ),
                 _NavItem(
                   icon: Icons.account_balance_outlined,
-                  label: 'Bayan ERP',
+                  label: s.bayanErp,
                   isActive: section == AppSection.inventory,
                   onTap: () => onSectionChanged(AppSection.inventory),
                 ),
@@ -80,8 +84,8 @@ class AppSidebar extends StatelessWidget {
                   _NavItem(
                     icon: Icons.storefront_outlined,
                     label: state.platformFilter == 'hungerstation'
-                        ? 'HS Outlet'
-                        : 'Keeta Shops',
+                        ? s.hsOutlet
+                        : s.keetaShops,
                     isActive: false,
                     onTap: onMerchantsTap!,
                   ),
@@ -90,6 +94,8 @@ class AppSidebar extends StatelessWidget {
           ),
           const Spacer(),
           const Divider(color: AppTheme.sidebarItem, height: 1),
+          const SizedBox(height: 12),
+          const LanguageSwitcher(),
           BlocBuilder<OrdersBloc, OrdersState>(
             buildWhen: (p, c) => p.dongleNumber != c.dongleNumber,
             builder: (context, state) => _DongleButton(dongleNumber: state.dongleNumber),
@@ -105,6 +111,7 @@ class _SidebarBrand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final common = context.commonStrings;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
       child: Row(
@@ -119,13 +126,13 @@ class _SidebarBrand extends StatelessWidget {
             child: const Icon(Icons.local_shipping_outlined, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Al-Bayan',
-                  style: TextStyle(
+                  common.brandName,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -133,8 +140,8 @@ class _SidebarBrand extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Delivery Hub',
-                  style: TextStyle(color: AppTheme.sidebarText, fontSize: 11),
+                  common.brandTagline,
+                  style: const TextStyle(color: AppTheme.sidebarText, fontSize: 11),
                 ),
               ],
             ),

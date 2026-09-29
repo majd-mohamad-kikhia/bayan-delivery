@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/errors/app_error.dart';
 import '../../data/repositories/bayan_erp_repository.dart';
 import 'bayan_erp_event.dart';
 import 'bayan_erp_state.dart';
@@ -151,7 +152,7 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     } catch (e) {
       emit(state.copyWith(
         customersStatus: BayanErpStatus.failure,
-        customersError: e.toString(),
+        customersError: AppError.from(e),
       ));
     }
   }
@@ -175,7 +176,7 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     } catch (e) {
       emit(state.copyWith(
         productsStatus: BayanErpStatus.failure,
-        productsError: e.toString(),
+        productsError: AppError.from(e),
       ));
     }
   }
@@ -195,7 +196,7 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     } catch (e) {
       emit(state.copyWith(
         salesmenStatus: BayanErpStatus.failure,
-        salesmenError: e.toString(),
+        salesmenError: AppError.from(e),
       ));
     }
   }
@@ -220,7 +221,7 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     } catch (e) {
       emit(state.copyWith(
         agentsStatus: BayanErpStatus.failure,
-        agentsError: e.toString(),
+        agentsError: AppError.from(e),
       ));
     }
   }
@@ -240,7 +241,7 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     } catch (e) {
       emit(state.copyWith(
         storesStatus: BayanErpStatus.failure,
-        storesError: e.toString(),
+        storesError: AppError.from(e),
       ));
     }
   }

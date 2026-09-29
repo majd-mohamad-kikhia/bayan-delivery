@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/order_model.dart';
+import '../l10n/orders_strings.dart';
 import 'order_card.dart';
 
 class KanbanColumn extends StatelessWidget {
@@ -23,7 +24,7 @@ class KanbanColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 300,
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsetsDirectional.only(end: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
@@ -39,7 +40,7 @@ class KanbanColumn extends StatelessWidget {
                 : ListView.separated(
                     padding: const EdgeInsets.all(10),
                     itemCount: orders.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final order = orders[index];
                       return OrderCard(
@@ -128,7 +129,7 @@ class _EmptyColumn extends StatelessWidget {
           Icon(Icons.inbox_outlined, size: 28, color: Colors.grey.shade300),
           const SizedBox(height: 6),
           Text(
-            'No orders',
+            context.ordersStrings.noOrders,
             style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
           ),
         ],

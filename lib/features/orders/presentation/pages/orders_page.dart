@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/errors/app_error.dart';
+import '../../../../core/localization/locale_context.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
+import '../../../../core/widgets/error_banner.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../data/models/order_model.dart';
@@ -9,6 +12,7 @@ import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
 import '../config/platform_board_config.dart';
+import '../l10n/orders_strings.dart';
 import '../widgets/board_header.dart';
 import '../widgets/kanban_column.dart';
 import '../widgets/order_card.dart';
@@ -32,14 +36,11 @@ class _MainContent extends StatelessWidget {
     return BlocListener<OrdersBloc, OrdersState>(
       listenWhen: (p, c) => c.actionError != null && p.actionError != c.actionError,
       listener: (context, state) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(state.actionError!),
-              backgroundColor: AppTheme.coral,
-            ),
-          );
+        AppSnackBar.fromError(
+          context,
+          state.actionError!,
+          title: context.ordersStrings.actionFailed,
+        );
         context.read<OrdersBloc>().add(const OrderActionErrorCleared());
       },
       child: Column(
@@ -62,40 +63,24 @@ class _StaleBannerSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OrdersBloc, OrdersState>(
-      buildWhen: (p, c) => p.errorMessage != c.errorMessage || p.status != c.status,
+      buildWhen: (p, c) => p.error != c.error || p.status != c.status,
       builder: (context, state) {
-        if (state.errorMessage == null || state.status == OrdersStatus.failure) {
-          return const SizedBox.shrink();
-        }
-        return _StaleBanner(message: state.errorMessage!);
+        final error = state.error;
+        final show = error != null && state.status != OrdersStatus.failure;
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: show
+              ? ErrorBanner(
+                  error: error,
+                  title: context.commonStrings.showingCachedData,
+                  onRetry: () =>
+                      context.read<OrdersBloc>().add(const OrdersRequested()),
+                )
+              : const SizedBox(width: double.infinity),
+        );
       },
-    );
-  }
-}
-
-class _StaleBanner extends StatelessWidget {
-  const _StaleBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFFEF3C7),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-      child: Row(
-        children: [
-          const Icon(Icons.wifi_off, size: 13, color: Color(0xFF92400E)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Showing last known data — $message',
-              style: const TextStyle(color: Color(0xFF92400E), fontSize: 12),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -107,6 +92,7 @@ class _BoardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
     return BlocBuilder<OrdersBloc, OrdersState>(
       buildWhen: (p, c) =>
           p.status != c.status ||
@@ -115,12 +101,12 @@ class _BoardBody extends StatelessWidget {
       builder: (context, state) {
         if (state.status == OrdersStatus.initial ||
             state.status == OrdersStatus.loading) {
-          return const LoadingView(message: 'Loading orders…');
+          return LoadingView(message: s.loadingOrders);
         }
 
         if (state.status == OrdersStatus.failure && state.orders.isEmpty) {
           return ErrorView(
-            message: state.errorMessage ?? 'Failed to load orders.',
+            error: state.error ?? const AppError(AppErrorKind.unknown),
             onRetry: () => context.read<OrdersBloc>().add(const OrdersRequested()),
           );
         }
@@ -152,6 +138,7 @@ class _ActiveBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.all(16),
@@ -160,7 +147,7 @@ class _ActiveBoard extends StatelessWidget {
         children: [
           for (final column in board.activeColumns)
             KanbanColumn(
-              title: column.title,
+              title: s.statusLabel(column.status, platform: board.platformId),
               accentColor: column.color,
               orders: orders.where((o) => o.status == column.status).toList(),
               isActionPending: (order) =>
@@ -193,7 +180,7 @@ class _HistoryGrid extends StatelessWidget {
     if (orders.isEmpty) {
       return Center(
         child: Text(
-          'No archived orders yet',
+          context.ordersStrings.noArchivedOrders,
           style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
         ),
       );

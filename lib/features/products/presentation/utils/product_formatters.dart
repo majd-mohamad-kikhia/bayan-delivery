@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-String formatSar(double value) => 'SAR ${value.toStringAsFixed(2)}';
+import '../../../../core/localization/locale_context.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 Future<void> copyToClipboard(
   BuildContext context,
@@ -10,7 +11,5 @@ Future<void> copyToClipboard(
 ) async {
   await Clipboard.setData(ClipboardData(text: value));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text('$label copied')));
+  AppSnackBar.success(context, context.commonStrings.copied(label));
 }

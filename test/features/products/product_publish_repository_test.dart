@@ -158,7 +158,7 @@ void main() {
       );
 
       expect(outcome.phase, PublishPhase.published);
-      expect(outcome.message, 'Added to Keeta');
+      expect(outcome.notice, PublishNotice.added);
       final bind = executor
           .requestsTo(KeetaEndpoints.bindProductPictures.id)
           .single;
@@ -186,9 +186,9 @@ void main() {
         const KeetaListing(price: 4.5, category: 'Bakery'),
       );
 
-      expect(noPickupPrice.message, 'Pickup price must be greater than 0');
-      expect(badHours.message, contains('selling hours'));
-      expect(badImage.message, contains('Image URLs'));
+      expect(noPickupPrice.notice, PublishNotice.pickupPriceRequired);
+      expect(badHours.notice, PublishNotice.sellingHoursRequired);
+      expect(badImage.notice, PublishNotice.invalidImageUrl);
       expect(executor.requests, isEmpty);
     });
 
@@ -264,7 +264,7 @@ void main() {
         const KeetaListing(price: 4.5, category: 'Bakery'),
       );
       expect(outcome.phase, PublishPhase.failed);
-      expect(outcome.message, 'Duplicate product name');
+      expect(outcome.detail, 'Duplicate product name');
     });
 
     test(
@@ -429,7 +429,7 @@ void main() {
         const HsListing(price: 10),
       );
       expect(outcome.phase, PublishPhase.failed);
-      expect(outcome.message, contains('barcode'));
+      expect(outcome.notice, PublishNotice.barcodeRequired);
       expect(executor.requests, isEmpty);
     });
 
@@ -463,10 +463,8 @@ void main() {
         const HsListing(price: 4.5),
       );
       expect(outcome.phase, PublishPhase.failed);
-      expect(
-        outcome.message,
-        'HungerStation rejected it — images: poor quality',
-      );
+      expect(outcome.notice, PublishNotice.rejected);
+      expect(outcome.detail, 'images: poor quality');
       expect(executor.requestsTo(HsEndpoints.updateProducts.id), isEmpty);
     });
 
@@ -479,7 +477,8 @@ void main() {
           breadContent,
           const HsListing(price: 4.5, category: 'Retired'),
         );
-        expect(outcome.message, contains('"Retired"'));
+        expect(outcome.notice, PublishNotice.unknownCategory);
+        expect(outcome.detail, 'Retired');
         expect(executor.requestsTo(HsEndpoints.addProducts.id), isEmpty);
       },
     );

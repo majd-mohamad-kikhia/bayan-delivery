@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/product_model.dart';
 import '../../data/sample_products.dart';
+import '../l10n/products_strings.dart';
 import '../widgets/product_detail_panel.dart';
 import '../widgets/products_header.dart';
 import '../widgets/products_table.dart';
@@ -19,8 +20,8 @@ class ProductsPage extends StatefulWidget {
 class _ProductsPageState extends State<ProductsPage> {
   final _searchController = TextEditingController();
   String _query = '';
-  String _category = 'All';
-  String _status = 'All';
+  String? _category;
+  ProductStatusFilter _status = ProductStatusFilter.all;
   ProductModel? _selected;
   ProductModel? _publishing;
 
@@ -31,15 +32,14 @@ class _ProductsPageState extends State<ProductsPage> {
       (p, '${p.name}\n${p.nameAr}\n${p.sku}\n${p.barcode ?? ''}'.toLowerCase()),
   ];
 
-  static final List<String> _categories = [
-    'All',
-    ...({for (final p in sampleProducts) p.category}.toList()..sort()),
-  ];
+  static final List<String> _categories = {
+    for (final p in sampleProducts) p.category,
+  }.toList()..sort();
 
   /// Filter result, recomputed only when a filter changes — not on row
   /// selection or opening the publish screen.
   List<ProductModel> _filtered = const [];
-  (String, String, String)? _filterKey;
+  (String, String?, ProductStatusFilter)? _filterKey;
 
   @override
   void dispose() {
@@ -55,9 +55,9 @@ class _ProductsPageState extends State<ProductsPage> {
     final q = _query.toLowerCase();
     return _filtered = [
       for (final (p, text) in _searchIndex)
-        if ((_category == 'All' || p.category == _category) &&
-            (_status != 'Active' || p.isActive) &&
-            (_status != 'Inactive' || !p.isActive) &&
+        if ((_category == null || p.category == _category) &&
+            (_status != ProductStatusFilter.active || p.isActive) &&
+            (_status != ProductStatusFilter.inactive || !p.isActive) &&
             (q.isEmpty || text.contains(q)))
           p,
     ];
@@ -124,13 +124,13 @@ class _ProductsListView extends StatelessWidget {
 
   final TextEditingController searchController;
   final List<String> categories;
-  final String selectedCategory;
-  final String selectedStatus;
+  final String? selectedCategory;
+  final ProductStatusFilter selectedStatus;
   final List<ProductModel> products;
   final ProductModel? selected;
   final ValueChanged<String> onSearchChanged;
-  final ValueChanged<String> onCategoryChanged;
-  final ValueChanged<String> onStatusChanged;
+  final ValueChanged<String?> onCategoryChanged;
+  final ValueChanged<ProductStatusFilter> onStatusChanged;
   final ValueChanged<ProductModel> onSelect;
   final VoidCallback onCloseDetail;
   final ValueChanged<ProductModel> onAddToPlatforms;
@@ -190,18 +190,18 @@ class _IntegrationBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFC7D2FE)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.account_balance_outlined,
             size: 16,
             color: AppTheme.primary,
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Al-Bayan catalog — select a product, then add it to Keeta or HungerStation.',
-              style: TextStyle(
+              context.productsStrings.integrationBanner,
+              style: const TextStyle(
                 color: Color(0xFF3730A3),
                 fontSize: 12,
                 fontWeight: FontWeight.w500,

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../l10n/products_strings.dart';
+
+enum ProductStatusFilter { all, active, inactive }
 
 class ProductsToolbar extends StatelessWidget {
   const ProductsToolbar({
@@ -17,15 +21,19 @@ class ProductsToolbar extends StatelessWidget {
 
   final TextEditingController searchController;
   final List<String> categories;
-  final String selectedCategory;
-  final String selectedStatus;
+
+  /// Null shows every category.
+  final String? selectedCategory;
+  final ProductStatusFilter selectedStatus;
   final int resultCount;
   final ValueChanged<String> onSearchChanged;
-  final ValueChanged<String> onCategoryChanged;
-  final ValueChanged<String> onStatusChanged;
+  final ValueChanged<String?> onCategoryChanged;
+  final ValueChanged<ProductStatusFilter> onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
+    final common = context.commonStrings;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
@@ -35,7 +43,7 @@ class ProductsToolbar extends StatelessWidget {
             controller: searchController,
             onChanged: onSearchChanged,
             decoration: InputDecoration(
-              hintText: 'Search Al-Bayan products by name, SKU, or barcode…',
+              hintText: s.searchHint,
               hintStyle: const TextStyle(
                 color: AppTheme.textMuted,
                 fontSize: 13,
@@ -74,6 +82,12 @@ class ProductsToolbar extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
+                      _FilterChip(
+                        label: common.all,
+                        selected: selectedCategory == null,
+                        onTap: () => onCategoryChanged(null),
+                      ),
+                      const SizedBox(width: 6),
                       for (final category in categories) ...[
                         _FilterChip(
                           label: category,
@@ -85,13 +99,13 @@ class ProductsToolbar extends StatelessWidget {
                       const SizedBox(width: 8),
                       Container(width: 1, height: 22, color: AppTheme.border),
                       const SizedBox(width: 10),
-                      for (final status in const [
-                        'All',
-                        'Active',
-                        'Inactive',
-                      ]) ...[
+                      for (final status in ProductStatusFilter.values) ...[
                         _FilterChip(
-                          label: status == 'All' ? 'All status' : status,
+                          label: switch (status) {
+                            ProductStatusFilter.all => s.allStatuses,
+                            ProductStatusFilter.active => common.active,
+                            ProductStatusFilter.inactive => common.inactive,
+                          },
                           selected: selectedStatus == status,
                           onTap: () => onStatusChanged(status),
                         ),
@@ -102,7 +116,7 @@ class ProductsToolbar extends StatelessWidget {
                 ),
               ),
               Text(
-                '$resultCount items',
+                s.itemCount(resultCount),
                 style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
               ),
             ],

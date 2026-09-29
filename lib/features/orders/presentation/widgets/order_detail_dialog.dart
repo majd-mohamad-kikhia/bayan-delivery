@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/time_ago.dart';
 import '../../data/models/order_model.dart';
+import '../l10n/orders_strings.dart';
 import '../utils/order_status_style.dart';
 import 'platform_badge.dart';
 
@@ -10,7 +12,7 @@ void showOrderDetailDialog(BuildContext context, OrderModel order) {
   showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
-    barrierLabel: 'Order detail',
+    barrierLabel: context.ordersStrings.orderDetail,
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 260),
     transitionBuilder: (context, animation, _, child) {
@@ -23,7 +25,7 @@ void showOrderDetailDialog(BuildContext context, OrderModel order) {
         ),
       );
     },
-    pageBuilder: (context, _, __) => _OrderDetailDialog(order: order),
+    pageBuilder: (context, _, _) => _OrderDetailDialog(order: order),
   );
 }
 
@@ -97,10 +99,11 @@ class _DialogHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = OrderStatusStyle.color(order.status, platform: order.platform);
-    final statusLabel = OrderStatusStyle.label(order.status, platform: order.platform);
+    final statusLabel =
+        context.ordersStrings.statusLabel(order.status, platform: order.platform);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 12, 14),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 12, 14),
       child: Row(
         children: [
           PlatformBadge(platform: order.platform),
@@ -111,6 +114,7 @@ class _DialogHeader extends StatelessWidget {
               children: [
                 Text(
                   '#${order.orderCode ?? order.platformOrderId}',
+                  textDirection: TextDirection.ltr,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -138,6 +142,7 @@ class _DialogHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
+            tooltip: context.commonStrings.close,
             icon: const Icon(Icons.close, size: 18),
             style: IconButton.styleFrom(foregroundColor: AppTheme.textMuted),
           ),
@@ -156,6 +161,8 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
+    final common = context.commonStrings;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -163,7 +170,7 @@ class _MetaRow extends StatelessWidget {
         if (order.transportType != null)
           _MetaChip(
             icon: Icons.local_shipping_outlined,
-            label: order.transportTypeLabel,
+            label: s.transportTypeLabel(order.transportType!),
           ),
         if (order.lastEvent != null)
           _MetaChip(
@@ -172,11 +179,11 @@ class _MetaRow extends StatelessWidget {
           ),
         _MetaChip(
           icon: Icons.access_time_outlined,
-          label: 'Created ${timeAgo(order.createdAt)}',
+          label: s.createdAgo(timeAgo(order.createdAt, common)),
         ),
         _MetaChip(
           icon: Icons.update_outlined,
-          label: 'Updated ${timeAgo(order.updatedAt)}',
+          label: s.updatedAgo(timeAgo(order.updatedAt, common)),
         ),
       ],
     );
@@ -219,16 +226,17 @@ class _CustomerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
     return _Section(
       icon: Icons.person_outline,
-      title: 'Customer',
+      title: s.customer,
       child: Column(
         children: [
           if (order.customerName != null)
-            _InfoRow(label: 'Name', value: order.customerName!),
+            _InfoRow(label: s.name, value: order.customerName!),
           if (order.customerPhone != null) ...[
             const SizedBox(height: 6),
-            _InfoRow(label: 'Phone', value: order.customerPhone!),
+            _InfoRow(label: s.phone, value: order.customerPhone!, forceLtr: true),
           ],
         ],
       ),
@@ -247,7 +255,7 @@ class _ItemsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Section(
       icon: Icons.receipt_long_outlined,
-      title: 'Items',
+      title: context.ordersStrings.items,
       child: Column(
         children: [
           for (int i = 0; i < items.length; i++) ...[
@@ -267,7 +275,9 @@ class _ItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = item['name']?.toString() ?? 'Unknown item';
+    final s = context.ordersStrings;
+    final common = context.commonStrings;
+    final name = item['name']?.toString() ?? s.unknownItem;
     // HungerStation: pricing.quantity / unit_price / total_price
     // Keeta: qty / price
     final pricing = item['pricing'] as Map?;
@@ -312,7 +322,7 @@ class _ItemRow extends StatelessWidget {
               ),
               if (unitPrice != null)
                 Text(
-                  'SAR ${unitPrice.toStringAsFixed(2)} each',
+                  s.eachPrice(common.money(unitPrice.toDouble())),
                   style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
             ],
@@ -320,7 +330,7 @@ class _ItemRow extends StatelessWidget {
         ),
         if (totalPrice != null)
           Text(
-            'SAR ${totalPrice.toStringAsFixed(2)}',
+            common.money(totalPrice.toDouble()),
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -341,18 +351,19 @@ class _SimpleTotalSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
     return _Section(
       icon: Icons.payments_outlined,
-      title: 'Payment',
+      title: s.payment,
       child: Row(
         children: [
-          const Text(
-            'Total',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+          Text(
+            s.total,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
           ),
           const Spacer(),
           Text(
-            'SAR ${total.toStringAsFixed(2)}',
+            context.commonStrings.money(total),
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -379,26 +390,27 @@ class _PaymentSection extends StatelessWidget {
     final serviceFee = payment['service_fee'] as num?;
     final total = payment['order_total'] as num?;
     final type = payment['type']?.toString();
+    final s = context.ordersStrings;
 
     return _Section(
       icon: Icons.payments_outlined,
-      title: 'Payment${type != null ? ' · $type' : ''}',
+      title: type != null ? '${s.payment} · $type' : s.payment,
       child: Column(
         children: [
           if (subTotal != null)
-            _PayRow(label: 'Subtotal', value: subTotal),
+            _PayRow(label: s.subtotal, value: subTotal),
           if (taxes != null && taxes != 0)
-            _PayRow(label: 'VAT', value: taxes),
+            _PayRow(label: s.vat, value: taxes),
           if (discount != null && discount != 0)
-            _PayRow(label: 'Discount', value: -discount, valueColor: const Color(0xFF22C55E)),
+            _PayRow(label: s.discount, value: -discount, valueColor: const Color(0xFF22C55E)),
           if (deliveryFee != null && deliveryFee != 0)
-            _PayRow(label: 'Delivery fee', value: deliveryFee),
+            _PayRow(label: s.deliveryFee, value: deliveryFee),
           if (serviceFee != null && serviceFee != 0)
-            _PayRow(label: 'Service fee', value: serviceFee),
+            _PayRow(label: s.serviceFee, value: serviceFee),
           if (total != null) ...[
             const Divider(height: 14, color: AppTheme.border),
             _PayRow(
-              label: 'Total',
+              label: s.total,
               value: total,
               bold: true,
             ),
@@ -436,7 +448,7 @@ class _PayRow extends StatelessWidget {
         children: [
           Text(label, style: style.copyWith(color: AppTheme.textSecondary, fontWeight: bold ? FontWeight.w600 : FontWeight.w400)),
           const Spacer(),
-          Text('SAR ${value.toStringAsFixed(2)}', style: style),
+          Text(context.commonStrings.money(value.toDouble()), style: style),
         ],
       ),
     );
@@ -454,7 +466,7 @@ class _CancellationSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Section(
       icon: Icons.cancel_outlined,
-      title: 'Cancellation',
+      title: context.ordersStrings.cancellation,
       iconColor: AppTheme.coral,
       child: Container(
         padding: const EdgeInsets.all(10),
@@ -506,11 +518,12 @@ class _Section extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textMuted,
-                letterSpacing: 0.5,
+                // Letter spacing breaks Arabic letter joining.
+                letterSpacing: context.isArabic ? 0 : 0.5,
               ),
             ),
           ],
@@ -531,13 +544,21 @@ class _Section extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
+  const _InfoRow({required this.label, required this.value, this.forceLtr = false});
 
   final String label;
   final String value;
 
+  /// Keeps values like phone numbers LTR while staying start-aligned in RTL.
+  final bool forceLtr;
+
   @override
   Widget build(BuildContext context) {
+    final text = Text(
+      value,
+      textDirection: forceLtr ? TextDirection.ltr : null,
+      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary),
+    );
     return Row(
       children: [
         SizedBox(
@@ -545,10 +566,9 @@ class _InfoRow extends StatelessWidget {
           child: Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
         ),
         Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary),
-          ),
+          child: forceLtr
+              ? Align(alignment: AlignmentDirectional.centerStart, child: text)
+              : text,
         ),
       ],
     );

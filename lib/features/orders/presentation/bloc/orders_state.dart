@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../data/models/order_model.dart';
 import '../config/platform_board_config.dart';
 
@@ -10,7 +11,7 @@ final class OrdersState extends Equatable {
   const OrdersState({
     this.status = OrdersStatus.initial,
     this.orders = const [],
-    this.errorMessage,
+    this.error,
     this.platformFilter = 'keeta',
     this.showHistory = false,
     this.dongleNumber = AppConstants.defaultDongleNumber,
@@ -21,12 +22,12 @@ final class OrdersState extends Equatable {
 
   final OrdersStatus status;
   final List<OrderModel> orders;
-  final String? errorMessage;
+  final AppError? error;
   final String platformFilter;
   final bool showHistory;
   final String dongleNumber;
   final Set<String> pendingActionIds;
-  final String? actionError;
+  final AppError? actionError;
 
   /// Set after every successful fetch — drives the "Updated Xs ago" display.
   final DateTime? lastSyncedAt;
@@ -42,20 +43,20 @@ final class OrdersState extends Equatable {
   OrdersState copyWith({
     OrdersStatus? status,
     List<OrderModel>? orders,
-    String? errorMessage,
+    AppError? error,
     bool clearError = false,
     String? platformFilter,
     bool? showHistory,
     String? dongleNumber,
     Set<String>? pendingActionIds,
-    String? actionError,
+    AppError? actionError,
     bool clearActionError = false,
     DateTime? lastSyncedAt,
   }) {
     return OrdersState(
       status: status ?? this.status,
       orders: orders ?? this.orders,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      error: clearError ? null : (error ?? this.error),
       platformFilter: platformFilter ?? this.platformFilter,
       showHistory: showHistory ?? this.showHistory,
       dongleNumber: dongleNumber ?? this.dongleNumber,
@@ -69,7 +70,7 @@ final class OrdersState extends Equatable {
   List<Object?> get props => [
         status,
         orders,
-        errorMessage,
+        error,
         platformFilter,
         showHistory,
         dongleNumber,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../l10n/merchants_strings.dart';
 
 Future<bool> confirmEmergencyStatusChange(
   BuildContext context, {
@@ -10,7 +12,7 @@ Future<bool> confirmEmergencyStatusChange(
   final result = await showGeneralDialog<bool>(
     context: context,
     barrierDismissible: true,
-    barrierLabel: 'Confirm status',
+    barrierLabel: context.merchantsStrings.confirmStatus,
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 260),
     transitionBuilder: (context, animation, _, child) {
@@ -23,7 +25,7 @@ Future<bool> confirmEmergencyStatusChange(
         ),
       );
     },
-    pageBuilder: (context, _, __) => _ConfirmDialog(closing: closing, shopName: shopName),
+    pageBuilder: (context, _, _) => _ConfirmDialog(closing: closing, shopName: shopName),
   );
   return result ?? false;
 }
@@ -36,11 +38,10 @@ class _ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.merchantsStrings;
     final color = closing ? AppTheme.coral : const Color(0xFF22C55E);
-    final title = closing ? 'Emergency Close?' : 'Reopen Branch?';
-    final body = closing
-        ? 'Close "$shopName" immediately on Keeta. Use this only for unplanned closures — not for scheduled hours.'
-        : 'Set "$shopName" back to AVAILABLE on Keeta.';
+    final title = closing ? s.emergencyCloseTitle : s.reopenBranchTitle;
+    final body = closing ? s.emergencyCloseBody(shopName) : s.reopenBranchBody(shopName);
 
     return Center(
       child: ConstrainedBox(
@@ -89,7 +90,7 @@ class _ConfirmDialog extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _Btn(
-                        label: 'Cancel',
+                        label: context.commonStrings.cancel,
                         filled: false,
                         color: AppTheme.textSecondary,
                         onTap: () => Navigator.pop(context, false),
@@ -98,7 +99,7 @@ class _ConfirmDialog extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _Btn(
-                        label: closing ? 'Close Now' : 'Reopen',
+                        label: closing ? s.closeNow : s.reopen,
                         filled: true,
                         color: color,
                         onTap: () => Navigator.pop(context, true),

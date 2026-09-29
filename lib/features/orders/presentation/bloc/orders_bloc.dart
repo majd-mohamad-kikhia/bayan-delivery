@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../../../core/realtime/device_poller.dart';
 import '../../../../core/storage/app_preferences.dart';
 import '../../data/repositories/orders_repository.dart';
@@ -90,8 +91,8 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     } catch (e) {
       emit(
         silent
-            ? state.copyWith(errorMessage: e.toString())
-            : state.copyWith(status: OrdersStatus.failure, errorMessage: e.toString()),
+            ? state.copyWith(error: AppError.from(e))
+            : state.copyWith(status: OrdersStatus.failure, error: AppError.from(e)),
       );
     }
   }
@@ -158,7 +159,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(actionError: e.toString()));
+      emit(state.copyWith(actionError: AppError.from(e)));
     } finally {
       final updated = {...state.pendingActionIds}..remove(key);
       emit(state.copyWith(pendingActionIds: updated));

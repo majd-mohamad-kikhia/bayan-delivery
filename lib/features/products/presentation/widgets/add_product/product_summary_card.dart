@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../core/localization/locale_context.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../data/models/product_model.dart';
-import '../../utils/product_formatters.dart';
+import '../../l10n/products_strings.dart';
 
 /// Read-only Al-Bayan product summary shown while publishing to platforms.
 class ProductSummaryCard extends StatelessWidget {
@@ -12,6 +13,8 @@ class ProductSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
+    final common = context.commonStrings;
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surface,
@@ -37,21 +40,24 @@ class ProductSummaryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Al-Bayan product',
-                      style: TextStyle(
+                      s.alBayanProduct,
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.textPrimary,
                       ),
                     ),
                     Text(
-                      'From your accounting catalog — not editable here',
-                      style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                      s.alBayanProductSubtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -95,7 +101,7 @@ class ProductSummaryCard extends StatelessWidget {
                     _Chip(label: product.category),
                     _Chip(label: product.unit),
                     _Chip(
-                      label: product.isActive ? 'Active' : 'Inactive',
+                      label: product.isActive ? common.active : common.inactive,
                       tone: product.isActive
                           ? const Color(0xFF166534)
                           : const Color(0xFF991B1B),
@@ -109,20 +115,20 @@ class ProductSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _InfoRow(label: 'Sale price', value: formatSar(product.salePrice)),
-          _InfoRow(label: 'Cost price', value: formatSar(product.costPrice)),
+          _InfoRow(label: s.salePrice, value: common.money(product.salePrice)),
+          _InfoRow(label: s.costPrice, value: common.money(product.costPrice)),
           _InfoRow(
-            label: 'Tax',
+            label: s.tax,
             value: '${product.taxRate.toStringAsFixed(0)}%',
           ),
           _InfoRow(
-            label: 'Stock',
+            label: s.stock,
             value: product.stockQty % 1 == 0
                 ? product.stockQty.toInt().toString()
                 : product.stockQty.toStringAsFixed(1),
           ),
           if (product.barcode != null)
-            _InfoRow(label: 'Barcode', value: product.barcode!),
+            _InfoRow(label: s.barcode, value: product.barcode!),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
@@ -130,14 +136,18 @@ class ProductSummaryCard extends StatelessWidget {
               color: const Color(0xFFEEF2FF),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.lock_outline, size: 14, color: Color(0xFF3730A3)),
-                SizedBox(width: 8),
+                const Icon(
+                  Icons.lock_outline,
+                  size: 14,
+                  color: Color(0xFF3730A3),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Prices & stock stay owned by Al-Bayan. Platforms only get a menu listing.',
-                    style: TextStyle(
+                    s.ownershipNote,
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF3730A3),
                       fontWeight: FontWeight.w500,

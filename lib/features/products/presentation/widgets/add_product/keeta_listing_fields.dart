@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../../core/localization/locale_context.dart';
 import '../../../../../core/platforms/keeta/keeta_types.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../data/models/listing_models.dart';
 import '../../cubit/publish_product_cubit.dart';
-import '../../utils/product_formatters.dart';
+import '../../l10n/products_strings.dart';
 import 'listing_form_fields.dart';
 
 /// Every field Keeta's `/product/spu/batchcreate` takes for a single-SKU
@@ -43,6 +44,7 @@ class _KeetaListingFieldsState extends State<KeetaListingFields> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     final listing = widget.listing;
     final accent = widget.accent;
 
@@ -50,15 +52,15 @@ class _KeetaListingFieldsState extends State<KeetaListingFields> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ListingSwitch(
-          label: 'Available',
-          hint: 'status — off lists it as unavailable',
+          label: s.available,
+          hint: s.keetaAvailableHint,
           value: listing.available,
           accent: accent,
           onChanged: (v) => _update((l) => l.copyWith(available: v)),
         ),
         ListingSwitch(
-          label: 'Signature item',
-          hint: 'isSpecialty — max 15 per store',
+          label: s.signatureItem,
+          hint: s.signatureItemHint,
           value: listing.signature,
           accent: accent,
           onChanged: (v) => _update((l) => l.copyWith(signature: v)),
@@ -66,50 +68,52 @@ class _KeetaListingFieldsState extends State<KeetaListingFields> {
         const SizedBox(height: 8),
         ListingPair(
           ListingNumberField(
-            label: 'Delivery price (SAR) *',
+            label: s.deliveryPriceRequired,
             initial: listing.price,
             onChanged: (v) =>
                 _update((l) => l.copyWith(price: v?.toDouble() ?? 0)),
           ),
           ListingCategoryField(
-            label: 'Menu category *',
+            label: s.menuCategoryRequired,
             initial: listing.category,
-            hint: 'Existing or new category',
+            hint: s.menuCategoryHint,
             suggestions: _categories,
             onChanged: (v) => _update((l) => l.copyWith(category: v)),
           ),
         ),
 
         ListingSection(
-          title: 'Selling time',
-          hint: 'availableTime',
+          title: s.sellingTime,
+          hint: s.sellingTimeHint,
           children: [
             SegmentedButton<bool>(
               showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: false, label: Text('All day')),
-                ButtonSegment(value: true, label: Text('Daily hours')),
+              segments: [
+                ButtonSegment(value: false, label: Text(s.allDay)),
+                ButtonSegment(value: true, label: Text(s.dailyHours)),
               ],
               selected: {listing.limitedHours},
-              onSelectionChanged: (s) =>
-                  _update((l) => l.copyWith(limitedHours: s.first)),
+              onSelectionChanged: (selection) =>
+                  _update((l) => l.copyWith(limitedHours: selection.first)),
             ),
             if (listing.limitedHours) ...[
               const SizedBox(height: 10),
               ListingPair(
                 ListingTextField(
-                  label: 'From (HH:mm)',
+                  label: s.hoursFrom,
                   initial: _hoursFrom,
                   hint: '06:00',
+                  textDirection: TextDirection.ltr,
                   onChanged: (v) {
                     _hoursFrom = v;
                     _updateHours();
                   },
                 ),
                 ListingTextField(
-                  label: 'To (HH:mm)',
+                  label: s.hoursTo,
                   initial: _hoursTo,
                   hint: '11:00',
+                  textDirection: TextDirection.ltr,
                   onChanged: (v) {
                     _hoursTo = v;
                     _updateHours();
@@ -121,20 +125,20 @@ class _KeetaListingFieldsState extends State<KeetaListingFields> {
         ),
 
         ListingSection(
-          title: 'Pickup',
-          hint: 'userGetModeList — delivery is always on',
+          title: s.pickup,
+          hint: s.pickupHint,
           children: [
             ListingSwitch(
-              label: 'Allow pickup',
+              label: s.allowPickup,
               value: listing.pickup,
               accent: accent,
               onChanged: (v) => _update((l) => l.copyWith(pickup: v)),
             ),
             if (listing.pickup)
               ListingNumberField(
-                label: 'Pickup price (SAR) *',
+                label: s.pickupPriceRequired,
                 initial: listing.pickupPrice,
-                hint: formatSar(listing.price),
+                hint: context.commonStrings.money(listing.price),
                 onChanged: (v) => _update(
                   (l) => l.copyWith(pickupPrice: () => v?.toDouble()),
                 ),
@@ -143,8 +147,8 @@ class _KeetaListingFieldsState extends State<KeetaListingFields> {
         ),
 
         ListingSection(
-          title: 'Allergens',
-          hint: 'Required in Saudi Arabia (SFDA) — leave empty if none',
+          title: s.allergens,
+          hint: s.allergensHint,
           children: [
             Wrap(
               spacing: 6,
@@ -153,7 +157,7 @@ class _KeetaListingFieldsState extends State<KeetaListingFields> {
                 for (final allergen in KeetaAllergen.values)
                   FilterChip(
                     label: Text(
-                      allergen.wire,
+                      s.allergen(allergen),
                       style: const TextStyle(fontSize: 12),
                     ),
                     selected: listing.allergens.contains(allergen),
@@ -188,6 +192,7 @@ class _NutritionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     final filled = listing.nutrition.length;
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -197,16 +202,16 @@ class _NutritionSection extends StatelessWidget {
           tilePadding: EdgeInsets.zero,
           childrenPadding: const EdgeInsets.only(bottom: 4),
           title: Text(
-            'Nutrition facts${filled == 0 ? '' : ' ($filled)'}',
+            s.nutritionFacts(filled),
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppTheme.textSecondary,
             ),
           ),
-          subtitle: const Text(
-            'Calories are shown on menus in Saudi Arabia',
-            style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+          subtitle: Text(
+            s.nutritionHint,
+            style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
           ),
           children: [
             GridView.count(
@@ -219,7 +224,7 @@ class _NutritionSection extends StatelessWidget {
               children: [
                 for (final nutrient in KeetaNutrient.values)
                   ListingNumberField(
-                    label: '${nutrient.label} (${nutrient.unit})',
+                    label: s.nutrient(nutrient),
                     initial: listing.nutrition[nutrient],
                     decimal: false,
                     onChanged: (v) => onUpdate(
@@ -235,14 +240,14 @@ class _NutritionSection extends StatelessWidget {
             const SizedBox(height: 10),
             ListingPair(
               ListingNumberField(
-                label: 'Serves (1–9 people)',
+                label: s.servingSize,
                 initial: listing.servingSize,
                 decimal: false,
                 onChanged: (v) =>
                     onUpdate((l) => l.copyWith(servingSize: () => v?.toInt())),
               ),
               ListingNumberField(
-                label: 'Caffeine (mg)',
+                label: s.caffeine,
                 initial: listing.caffeineMg,
                 onChanged: (v) => onUpdate(
                   (l) => l.copyWith(caffeineMg: () => v?.toDouble()),

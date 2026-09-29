@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/time_ago.dart';
 import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
+import '../l10n/orders_strings.dart';
 import 'platform_tabs.dart';
 
 class BoardHeader extends StatelessWidget {
@@ -18,7 +20,7 @@ class BoardHeader extends StatelessWidget {
         color: AppTheme.surface,
         border: Border(bottom: BorderSide(color: AppTheme.border)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 14, 16, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -50,11 +52,12 @@ class _PageTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
     return BlocBuilder<OrdersBloc, OrdersState>(
       buildWhen: (p, c) => p.showHistory != c.showHistory,
       builder: (context, state) {
         return Text(
-          state.showHistory ? 'Order Archive' : 'Live Kanban',
+          state.showHistory ? s.orderArchive : s.liveKanban,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -71,6 +74,8 @@ class _HeaderActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.ordersStrings;
+    final common = context.commonStrings;
     return BlocBuilder<OrdersBloc, OrdersState>(
       buildWhen: (p, c) =>
           p.lastSyncedAt != c.lastSyncedAt || p.showHistory != c.showHistory,
@@ -81,20 +86,20 @@ class _HeaderActions extends StatelessWidget {
               const Icon(Icons.circle, size: 7, color: Color(0xFF22C55E)),
               const SizedBox(width: 5),
               Text(
-                'Updated ${timeAgo(state.lastSyncedAt!)}',
+                s.updatedAgo(timeAgo(state.lastSyncedAt!, common)),
                 style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
               ),
               const SizedBox(width: 10),
             ],
             _IconBtn(
               icon: Icons.refresh_rounded,
-              tooltip: 'Refresh',
+              tooltip: s.refresh,
               onTap: () => context.read<OrdersBloc>().add(const OrdersRequested()),
             ),
             const SizedBox(width: 6),
             _OutlineBtn(
               icon: state.showHistory ? Icons.dashboard_outlined : Icons.history_outlined,
-              label: state.showHistory ? 'Live Board' : 'Archive',
+              label: state.showHistory ? s.liveBoard : s.archive,
               onTap: () => context.read<OrdersBloc>().add(const OrdersHistoryToggled()),
             ),
           ],

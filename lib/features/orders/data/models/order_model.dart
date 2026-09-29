@@ -118,17 +118,6 @@ class OrderModel extends Equatable {
     return raw.cast<String, dynamic>();
   }
 
-  String get transportTypeLabel {
-    switch (transportType) {
-      case 'VENDOR_DELIVERY':
-        return 'Vendor Delivery';
-      case 'LOGISTICS_DELIVERY':
-        return 'Logistics Delivery';
-      default:
-        return transportType ?? '—';
-    }
-  }
-
   @override
   List<Object?> get props => [
         platform,

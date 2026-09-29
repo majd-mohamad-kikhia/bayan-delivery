@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/product_model.dart';
-import '../utils/product_formatters.dart';
+import '../l10n/products_strings.dart';
 
 class ProductsTable extends StatelessWidget {
   const ProductsTable({
@@ -19,16 +20,16 @@ class ProductsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (products.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'No products match your filters',
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
+          context.productsStrings.noMatchingProducts,
+          style: const TextStyle(color: AppTheme.textMuted, fontSize: 14),
         ),
       );
     }
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 8, 16),
+      margin: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 16),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -65,18 +66,19 @@ class _TableHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.productsStrings;
     return Container(
       color: AppTheme.surfaceAlt,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: const Row(
+      child: Row(
         children: [
-          Expanded(flex: 2, child: _HeaderCell('SKU')),
-          Expanded(flex: 3, child: _HeaderCell('Product')),
-          Expanded(flex: 2, child: _HeaderCell('Category')),
-          Expanded(child: _HeaderCell('Unit')),
-          Expanded(flex: 2, child: _HeaderCell('Sale price')),
-          Expanded(child: _HeaderCell('Stock')),
-          Expanded(child: _HeaderCell('Status')),
+          Expanded(flex: 2, child: _HeaderCell(s.sku)),
+          Expanded(flex: 3, child: _HeaderCell(s.product)),
+          Expanded(flex: 2, child: _HeaderCell(s.category)),
+          Expanded(child: _HeaderCell(s.unit)),
+          Expanded(flex: 2, child: _HeaderCell(s.salePrice)),
+          Expanded(child: _HeaderCell(s.stock)),
+          Expanded(child: _HeaderCell(s.status)),
         ],
       ),
     );
@@ -182,7 +184,7 @@ class _ProductRow extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: Text(
-                  formatSar(product.salePrice),
+                  context.commonStrings.money(product.salePrice),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -206,7 +208,7 @@ class _ProductRow extends StatelessWidget {
               ),
               Expanded(
                 child: Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: _StatusPill(active: product.isActive),
                 ),
               ),
@@ -232,7 +234,7 @@ class _StatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        active ? 'Active' : 'Inactive',
+        active ? context.commonStrings.active : context.commonStrings.inactive,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
