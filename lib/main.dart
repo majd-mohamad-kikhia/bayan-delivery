@@ -5,10 +5,15 @@ import 'app_shell.dart';
 import 'core/constants/app_constants.dart';
 import 'core/database/app_database.dart';
 import 'core/network/api_client.dart';
+import 'core/network/bayan_erp_client.dart';
 import 'core/platforms/platform_apis.dart';
 import 'core/realtime/device_poller.dart';
 import 'core/storage/app_preferences.dart';
 import 'core/theme/app_theme.dart';
+import 'features/bayan_erp/data/datasources/bayan_erp_datasource.dart';
+import 'features/bayan_erp/data/repositories/bayan_erp_repository.dart';
+import 'features/bayan_erp/presentation/bloc/bayan_erp_bloc.dart';
+import 'features/bayan_erp/presentation/bloc/bayan_erp_event.dart';
 import 'features/merchants/data/repositories/merchants_repository.dart';
 import 'features/merchants/presentation/cubit/hs_outlet_cubit.dart';
 import 'features/merchants/presentation/cubit/keeta_shop_cubit.dart';
@@ -24,6 +29,9 @@ Future<void> main() async {
   final apiClient = ApiClient();
   final ordersRepository = OrdersRepository(apiClient);
   final merchantsRepository = MerchantsRepository(apiClient);
+  final bayanErpRepository = BayanErpRepository(
+    BayanErpDatasource(BayanErpClient()),
+  );
   // Independent startup work runs together, not one after another.
   final (preferences, platformApis, database) = await (
     AppPreferences.create(),
@@ -43,6 +51,7 @@ Future<void> main() async {
       preferences: preferences,
       ordersRepository: ordersRepository,
       merchantsRepository: merchantsRepository,
+      bayanErpRepository: bayanErpRepository,
       platformApis: platformApis,
       devicePoller: devicePoller,
       productRecords: ProductRecordsRepository(database.db),
@@ -56,6 +65,7 @@ class BayanDesktopApp extends StatelessWidget {
     required this.preferences,
     required this.ordersRepository,
     required this.merchantsRepository,
+    required this.bayanErpRepository,
     required this.platformApis,
     required this.devicePoller,
     required this.productRecords,
@@ -64,6 +74,7 @@ class BayanDesktopApp extends StatelessWidget {
   final AppPreferences preferences;
   final OrdersRepository ordersRepository;
   final MerchantsRepository merchantsRepository;
+  final BayanErpRepository bayanErpRepository;
   final PlatformApis platformApis;
   final DevicePoller devicePoller;
   final ProductRecordsRepository productRecords;
@@ -90,6 +101,10 @@ class BayanDesktopApp extends StatelessWidget {
               preferences: preferences,
               devicePoller: devicePoller,
             )..add(const OrdersRequested()),
+          ),
+          BlocProvider(
+            create: (_) => BayanErpBloc(repository: bayanErpRepository)
+              ..add(const BayanErpRefreshRequested()),
           ),
           BlocProvider(
             create: (_) => KeetaShopCubit(

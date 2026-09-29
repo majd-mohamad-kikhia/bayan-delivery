@@ -1,1 +1,1 @@
-enum AppSection { orders, products }
+enum AppSection { orders, products, inventory }

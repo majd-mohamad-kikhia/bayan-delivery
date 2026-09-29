@@ -67,6 +67,12 @@ class AppSidebar extends StatelessWidget {
                   isActive: section == AppSection.products,
                   onTap: () => onSectionChanged(AppSection.products),
                 ),
+                _NavItem(
+                  icon: Icons.account_balance_outlined,
+                  label: 'Bayan ERP',
+                  isActive: section == AppSection.inventory,
+                  onTap: () => onSectionChanged(AppSection.inventory),
+                ),
                 if (onMerchantsTap != null &&
                     ordersActive &&
                     (state.platformFilter == 'keeta' ||
