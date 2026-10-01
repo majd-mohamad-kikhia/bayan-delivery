@@ -64,11 +64,29 @@ abstract class MerchantsStrings {
   String get closeForToday;
   String get closeUntil;
   String get closedReasonTitle;
+  String get closedReasonSubtitle;
   String get vendorStatus;
   String vendorIdLabel(String id);
   String chainIdLabel(String id);
   String closedReasonLabel(String reason);
   String closedUntilLabel(String until);
+
+  // ── HungerStation close-until picker ───────────────────────────────────
+  String get closeUntilTitle;
+  String get closeUntilSubtitle;
+  String get quickPicks;
+  String get pickTime;
+  String inMinutes(int minutes);
+  String inHours(int hours);
+  String get tomorrowMorning;
+  String get periodMorning;
+  String get periodAfternoon;
+  String get periodEvening;
+  String get periodNight;
+  String reopensAt(String date, String time);
+  String reopensIn(int days, int hours, int minutes);
+  String get pickFutureTime;
+  String get confirmClosure;
 
   // ── HungerStation vendor statuses ──────────────────────────────────────
   String get statusOpen;

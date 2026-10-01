@@ -135,8 +135,6 @@ final class OrdersStringsAr extends OrdersStrings {
   @override
   String get statusAccepted => 'مقبول';
   @override
-  String get statusReady => 'جاهز';
-  @override
   String get statusReadyForPickup => 'جاهز للاستلام';
   @override
   String get statusPickedUp => 'تم الاستلام';

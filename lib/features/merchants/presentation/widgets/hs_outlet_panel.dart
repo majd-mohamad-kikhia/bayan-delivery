@@ -8,6 +8,8 @@ import '../../../../core/widgets/error_view.dart';
 import '../../data/models/hs_vendor_status_model.dart';
 import '../cubit/hs_outlet_cubit.dart';
 import '../l10n/merchants_strings.dart';
+import 'hs_close_until_picker.dart';
+import 'hs_closed_reason_picker.dart';
 
 void showHsOutletPanel(BuildContext context, {required String dongleNumber}) {
   final cubit = context.read<HsOutletCubit>();
@@ -187,7 +189,10 @@ class _Body extends StatelessWidget {
   }
 
   Future<void> _closeToday(BuildContext context) async {
-    final reason = await _pickReason(context);
+    final reason = await showHsClosedReasonPicker(
+      context,
+      confirmLabel: context.merchantsStrings.closeForToday,
+    );
     if (reason == null || !context.mounted) return;
     await context.read<HsOutletCubit>().updateStatus(
           status: 'CLOSED_TODAY',
@@ -196,58 +201,23 @@ class _Body extends StatelessWidget {
   }
 
   Future<void> _closeUntil(BuildContext context) async {
-    final reason = await _pickReason(context);
+    final reason = await showHsClosedReasonPicker(
+      context,
+      confirmLabel: context.merchantsStrings.closeUntil,
+    );
     if (reason == null || !context.mounted) return;
 
-    final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: now.add(const Duration(hours: 2)),
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 30)),
+    final until = await showHsCloseUntilPicker(
+      context,
+      reasonLabel: context.merchantsStrings.closedReason(reason),
     );
-    if (date == null || !context.mounted) return;
+    if (until == null || !context.mounted) return;
 
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 2))),
-    );
-    if (time == null || !context.mounted) return;
-
-    final until = DateTime(date.year, date.month, date.day, time.hour, time.minute);
     await context.read<HsOutletCubit>().updateStatus(
           status: 'CLOSED_UNTIL',
           closedReason: reason,
           closedUntil: until,
         );
-  }
-
-  Future<String?> _pickReason(BuildContext context) {
-    return showModalBottomSheet<String>(
-      context: context,
-      builder: (context) {
-        final s = context.merchantsStrings;
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  s.closedReasonTitle,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-              ),
-              for (final reason in HsClosedReasons.values)
-                ListTile(
-                  title: Text(s.closedReason(reason)),
-                  onTap: () => Navigator.pop(context, reason),
-                ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 

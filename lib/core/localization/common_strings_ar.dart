@@ -137,6 +137,4 @@ final class CommonStringsAr extends CommonStrings {
   String get keeta => 'كيتا';
   @override
   String get hungerStation => 'هنقرستيشن';
-  @override
-  String get careem => 'كريم';
 }

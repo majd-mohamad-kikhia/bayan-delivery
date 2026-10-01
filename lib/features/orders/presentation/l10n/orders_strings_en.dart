@@ -126,8 +126,6 @@ final class OrdersStringsEn extends OrdersStrings {
   @override
   String get statusAccepted => 'Accepted';
   @override
-  String get statusReady => 'Ready';
-  @override
   String get statusReadyForPickup => 'Ready for Pickup';
   @override
   String get statusPickedUp => 'Picked Up';

@@ -104,6 +104,4 @@ final class CommonStringsEn extends CommonStrings {
   String get keeta => 'Keeta';
   @override
   String get hungerStation => 'HungerStation';
-  @override
-  String get careem => 'Careem';
 }

@@ -10,7 +10,7 @@ class AppConstants {
 
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.100.116.218:3001',
+    defaultValue: 'http://localhost:3001',
   );
 
   /// Backend route that runs `executeApiAndSendWebhook` for direct platform

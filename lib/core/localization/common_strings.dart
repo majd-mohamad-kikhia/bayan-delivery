@@ -54,12 +54,10 @@ abstract class CommonStrings {
   // ── Platforms ──────────────────────────────────────────────────────────
   String get keeta;
   String get hungerStation;
-  String get careem;
 
   String platformName(String platformId) => switch (platformId) {
         'keeta' => keeta,
         'hungerstation' => hungerStation,
-        'careem' => careem,
         _ => platformId,
       };
 }

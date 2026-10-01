@@ -87,6 +87,9 @@ final class MerchantsStringsEn extends MerchantsStrings {
   @override
   String get closedReasonTitle => 'Closed reason';
   @override
+  String get closedReasonSubtitle =>
+      'Why is the outlet closing? Customers can\'t order until you reopen.';
+  @override
   String get vendorStatus => 'Vendor status';
   @override
   String vendorIdLabel(String id) => 'Vendor: $id';
@@ -96,6 +99,45 @@ final class MerchantsStringsEn extends MerchantsStrings {
   String closedReasonLabel(String reason) => 'Reason: $reason';
   @override
   String closedUntilLabel(String until) => 'Until: $until';
+
+  // ── HungerStation close-until picker ───────────────────────────────────
+  @override
+  String get closeUntilTitle => 'Reopen at';
+  @override
+  String get closeUntilSubtitle => 'Pick when the outlet starts taking orders again.';
+  @override
+  String get quickPicks => 'Quick picks';
+  @override
+  String get pickTime => 'Time';
+  @override
+  String inMinutes(int minutes) => 'In $minutes min';
+  @override
+  String inHours(int hours) => hours == 1 ? 'In 1 hour' : 'In $hours hours';
+  @override
+  String get tomorrowMorning => 'Tomorrow morning';
+  @override
+  String get periodMorning => 'Morning';
+  @override
+  String get periodAfternoon => 'Afternoon';
+  @override
+  String get periodEvening => 'Evening';
+  @override
+  String get periodNight => 'Late night';
+  @override
+  String reopensAt(String date, String time) => 'Reopens $date · $time';
+  @override
+  String reopensIn(int days, int hours, int minutes) {
+    final parts = [
+      if (days > 0) '${days}d',
+      if (hours > 0) '${hours}h',
+      if (minutes > 0 || (days == 0 && hours == 0)) '${minutes}m',
+    ];
+    return 'In ${parts.join(' ')}';
+  }
+  @override
+  String get pickFutureTime => 'Pick a time in the future';
+  @override
+  String get confirmClosure => 'Confirm closure';
 
   // ── HungerStation vendor statuses ──────────────────────────────────────
   @override

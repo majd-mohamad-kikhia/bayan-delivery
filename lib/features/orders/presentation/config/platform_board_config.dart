@@ -16,7 +16,7 @@ class BoardColumn {
 /// Board layout + status colors for a single delivery platform.
 ///
 /// Each platform owns its active columns and which statuses count as history,
-/// so Keeta / HungerStation / Careem can diverge without shared assumptions.
+/// so Keeta / HungerStation can diverge without shared assumptions.
 class PlatformBoardConfig {
   const PlatformBoardConfig({
     required this.platformId,
@@ -84,27 +84,10 @@ abstract final class PlatformBoards {
     },
   );
 
-  static const careem = PlatformBoardConfig(
-    platformId: 'careem',
-    activeColumns: [
-      BoardColumn(status: 'NEW_ORDER', color: Color(0xFF3D5AFE)),
-      BoardColumn(status: 'ORDER_ACCEPTED', color: Color(0xFF7C4DFF)),
-      BoardColumn(status: 'ORDER_READY', color: Color(0xFFFB8C00)),
-      BoardColumn(status: 'ORDER_DISPATCHED', color: Color(0xFF00ACC1)),
-    ],
-    terminalStatuses: {'ORDER_COMPLETED', 'ORDER_CANCELLED'},
-    statusColors: {
-      'ORDER_COMPLETED': Color(0xFF22C55E),
-      'ORDER_CANCELLED': Color(0xFFFF6B6B),
-    },
-  );
-
   static PlatformBoardConfig of(String platform) {
     switch (platform) {
       case 'hungerstation':
         return hungerstation;
-      case 'careem':
-        return careem;
       case 'keeta':
       default:
         return keeta;

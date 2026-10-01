@@ -101,7 +101,6 @@ abstract class OrdersStrings {
   String get statusCreated;
   String get statusConfirmed;
   String get statusAccepted;
-  String get statusReady;
   String get statusReadyForPickup;
   String get statusPickedUp;
   String get statusDispatched;
@@ -111,16 +110,15 @@ abstract class OrdersStrings {
   String get statusRefundRequest;
   String get statusCancelRequest;
 
-  /// Keeta names the first two steps Created / Confirmed and Careem uses a
-  /// short "Ready", so a few codes resolve differently per platform.
+  /// Keeta names the first two steps Created / Confirmed, so a few codes
+  /// resolve differently per platform.
   String statusLabel(String status, {required String platform}) =>
       switch (status) {
         'NEW_ORDER' => platform == 'keeta' ? statusCreated : statusNew,
         'CREATED' => statusCreated,
         'ORDER_ACCEPTED' => platform == 'keeta' ? statusConfirmed : statusAccepted,
         'CONFIRMED' => statusConfirmed,
-        'ORDER_READY' => platform == 'careem' ? statusReady : statusReadyForPickup,
-        'READY_FOR_PICKUP' => statusReadyForPickup,
+        'ORDER_READY' || 'READY_FOR_PICKUP' => statusReadyForPickup,
         'ORDER_PICKED_UP' || 'PICKED_UP' => statusPickedUp,
         'ORDER_DISPATCHED' || 'DISPATCHED' => statusDispatched,
         'ORDER_DELIVERED' || 'DELIVERED' => statusDelivered,
