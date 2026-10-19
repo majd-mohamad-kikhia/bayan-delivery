@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../core/localization/locale_context.dart';
 import '../l10n/orders_strings.dart';
 
-Future<String?> showDongleSettingsDialog(BuildContext context, {required String current}) {
+Future<String?> showDongleSettingsDialog(
+  BuildContext context, {
+  required String current,
+}) {
   final controller = TextEditingController(text: current);
 
   return showDialog<String>(

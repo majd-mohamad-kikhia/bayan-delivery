@@ -25,11 +25,14 @@ class BayanErpDatasource {
     int offset = 0,
     int limit = 20,
   }) async {
-    final raw = await _client.getList('/getCustomers', query: {
-      if (since != null) 'date': _fmtDate(since),
-      'offset': offset,
-      'limet': limit,
-    });
+    final raw = await _client.getList(
+      '/getCustomers',
+      query: {
+        if (since != null) 'date': _fmtDate(since),
+        'offset': offset,
+        'limet': limit,
+      },
+    );
     return raw.map(CustomerModel.fromJson).toList(growable: false);
   }
 
@@ -41,11 +44,14 @@ class BayanErpDatasource {
     int offset = 0,
     int limit = 20,
   }) async {
-    final raw = await _client.getList('/getProducts', query: {
-      if (since != null) 'date': _fmtDate(since),
-      'offset': offset,
-      'limet': limit,
-    });
+    final raw = await _client.getList(
+      '/getProducts',
+      query: {
+        if (since != null) 'date': _fmtDate(since),
+        'offset': offset,
+        'limet': limit,
+      },
+    );
     return raw.map(ErpProductModel.fromJson).toList(growable: false);
   }
 
@@ -53,9 +59,10 @@ class BayanErpDatasource {
 
   /// `GET /getSalesman`
   Future<List<SalesmanModel>> fetchSalesmen({DateTime? since}) async {
-    final raw = await _client.getList('/getSalesman', query: {
-      if (since != null) 'date': _fmtDate(since),
-    });
+    final raw = await _client.getList(
+      '/getSalesman',
+      query: {if (since != null) 'date': _fmtDate(since)},
+    );
     return raw.map(SalesmanModel.fromJson).toList(growable: false);
   }
 
@@ -69,11 +76,14 @@ class BayanErpDatasource {
     int number = 1,
     int limit = 20,
   }) async {
-    final raw = await _client.getList('/getAgent', query: {
-      if (since != null) 'date': _fmtDate(since),
-      'number': number,
-      'limet': limit,
-    });
+    final raw = await _client.getList(
+      '/getAgent',
+      query: {
+        if (since != null) 'date': _fmtDate(since),
+        'number': number,
+        'limet': limit,
+      },
+    );
     return raw.map(AgentModel.fromJson).toList(growable: false);
   }
 
@@ -81,9 +91,10 @@ class BayanErpDatasource {
 
   /// `GET /getStores`
   Future<List<StoreModel>> fetchStores({DateTime? since}) async {
-    final raw = await _client.getList('/getStores', query: {
-      if (since != null) 'date': _fmtDate(since),
-    });
+    final raw = await _client.getList(
+      '/getStores',
+      query: {if (since != null) 'date': _fmtDate(since)},
+    );
     return raw.map(StoreModel.fromJson).toList(growable: false);
   }
 

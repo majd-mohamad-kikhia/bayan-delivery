@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../utils/orders_date_filter.dart';
+
 sealed class OrdersEvent extends Equatable {
   const OrdersEvent();
 
@@ -33,6 +35,21 @@ final class OrdersPlatformFilterChanged extends OrdersEvent {
   List<Object?> get props => [platform];
 }
 
+/// The worker picked which days of orders to show.
+final class OrdersDateFilterChanged extends OrdersEvent {
+  const OrdersDateFilterChanged(this.filter);
+
+  final OrdersDateFilter filter;
+
+  @override
+  List<Object?> get props => [filter];
+}
+
+/// Silence (or bring back) the repeating new-order sound.
+final class OrdersAlertMuteToggled extends OrdersEvent {
+  const OrdersAlertMuteToggled();
+}
+
 final class OrdersHistoryToggled extends OrdersEvent {
   const OrdersHistoryToggled();
 }
@@ -52,6 +69,7 @@ final class OrderActionRequested extends OrdersEvent {
     required this.platformOrderId,
     required this.action,
     this.reason,
+    this.payload,
   });
 
   final String platform;
@@ -59,11 +77,25 @@ final class OrderActionRequested extends OrdersEvent {
   final String action;
   final String? reason;
 
+  /// Extra data some actions need (courier details, refund items).
+  final Map<String, Object?>? payload;
+
   @override
-  List<Object?> get props => [platform, platformOrderId, action, reason];
+  List<Object?> get props => [
+    platform,
+    platformOrderId,
+    action,
+    reason,
+    payload,
+  ];
 }
 
 /// Dismisses the action-error banner once the user has seen it.
 final class OrderActionErrorCleared extends OrdersEvent {
   const OrderActionErrorCleared();
+}
+
+/// The worker acknowledged the new-order alert dialog.
+final class NewOrderAlertDismissed extends OrdersEvent {
+  const NewOrderAlertDismissed();
 }

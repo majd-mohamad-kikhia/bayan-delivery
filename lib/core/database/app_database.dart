@@ -16,7 +16,7 @@ class AppDatabase {
   const AppDatabase._(this.db);
 
   static const String fileName = 'bayan_hub.db';
-  static const int version = 1;
+  static const int version = 6;
 
   final Database db;
 
@@ -56,16 +56,97 @@ class AppDatabase {
 
   static Future<void> _onCreate(Database db, int version) async {
     final batch = db.batch();
-    for (final statement in productRecordsSchema) {
+    for (final statement in [
+      ...productRecordsSchema,
+      ...ordersSchema,
+      ...productSyncSchema,
+      ...bayanOrdersSchema,
+    ]) {
       batch.execute(statement);
     }
     await batch.commit(noResult: true);
   }
 
   static Future<void> _onUpgrade(Database db, int from, int to) async {
-    // Version 1 is the first schema. Future migrations go here, one
-    // `if (from < N)` block each, so an old install upgrades step by step.
+    // One `if (from < N)` block per version, so an old install upgrades
+    // step by step.
+    if (from < 2) {
+      for (final statement in ordersSchema) {
+        await db.execute(statement);
+      }
+    }
+    if (from < 3) {
+      for (final statement in productSyncSchema) {
+        await db.execute(statement);
+      }
+    }
+    if (from < 5) {
+      for (final statement in bayanOrdersSchema) {
+        await db.execute(statement);
+      }
+    }
+    if (from < 6) {
+      // Timed offers were removed from the app.
+      await db.execute('DROP TABLE IF EXISTS product_offers');
+    }
   }
+
+  /// Local copy of the orders list. The middleware is the source of truth:
+  /// rows are always upserted from its responses, never edited locally.
+  /// Only the columns we filter or sort on are separate; the rest of the
+  /// platform payload stays in `order_json`.
+  static const List<String> ordersSchema = [
+    '''
+CREATE TABLE orders (
+  platform               TEXT    NOT NULL,
+  platform_order_id      TEXT    NOT NULL,
+  dongle_number          TEXT    NOT NULL,
+  status                 TEXT    NOT NULL,
+  last_event             TEXT,
+  transport_type         TEXT,
+  requires_urgent_action INTEGER NOT NULL DEFAULT 0,
+  available_actions      TEXT    NOT NULL,
+  order_json             TEXT    NOT NULL,
+  created_at             TEXT    NOT NULL,
+  updated_at             TEXT    NOT NULL,
+  synced_at              TEXT    NOT NULL,
+  PRIMARY KEY (platform, platform_order_id, dongle_number)
+) WITHOUT ROWID''',
+    'CREATE INDEX idx_orders_list ON orders(dongle_number, platform, updated_at DESC)',
+    'CREATE INDEX idx_orders_urgent ON orders(dongle_number, requires_urgent_action)',
+  ];
+
+  /// Orders sent to Bayan as invoices: one row per platform order, so an order
+  /// is never sent twice (a failed attempt keeps its error and may be retried).
+  static const List<String> bayanOrdersSchema = [
+    '''
+CREATE TABLE bayan_orders (
+  platform          TEXT NOT NULL,
+  platform_order_id TEXT NOT NULL,
+  status            TEXT NOT NULL,
+  total             REAL,
+  response          TEXT,
+  error             TEXT,
+  attempted_at      TEXT NOT NULL,
+  PRIMARY KEY (platform, platform_order_id)
+) WITHOUT ROWID''',
+  ];
+
+  /// What was last sent to each platform for a product: the price (minor
+  /// units) and the name. The sync compares Al-Bayan's current values with
+  /// these to find what changed, and updates a row only when that platform
+  /// accepted the change, so a platform that was down is retried next time.
+  static const List<String> productSyncSchema = [
+    '''
+CREATE TABLE product_sync (
+  bayan_num   TEXT    NOT NULL,
+  platform    TEXT    NOT NULL,
+  price_minor INTEGER NOT NULL,
+  name        TEXT    NOT NULL,
+  synced_at   TEXT    NOT NULL,
+  PRIMARY KEY (bayan_num, platform)
+) WITHOUT ROWID''',
+  ];
 
   /// Table for the five product fields: Name, BayanNum, KeetaNum,
   /// HungerNum, CareemNum.

@@ -18,10 +18,10 @@ final class SalesmanModel extends Equatable {
   final String phone;
 
   factory SalesmanModel.fromJson(Map<String, dynamic> json) => SalesmanModel(
-        id: (json['Id'] as num).toInt(),
-        name: (json['Name'] as String? ?? '').trim(),
-        phone: json['Phone'] as String? ?? '',
-      );
+    id: (json['Id'] as num).toInt(),
+    name: (json['Name'] as String? ?? '').trim(),
+    phone: json['Phone'] as String? ?? '',
+  );
 
   @override
   List<Object?> get props => [id, name, phone];

@@ -37,6 +37,7 @@ final class BayanErpState extends Equatable {
     this.productsPageSize = AppConstants.erpPageSize,
     this.productsQuery = '',
     this.productsStockFilter,
+    this.productsLastSyncAt,
     // ── Salesmen
     this.salesmenStatus = BayanErpStatus.initial,
     this.salesmen = const [],
@@ -74,6 +75,9 @@ final class BayanErpState extends Equatable {
   final String productsQuery;
   final ErpStockLevel? productsStockFilter;
 
+  /// Last successful products sync (fetch), persisted across restarts.
+  final DateTime? productsLastSyncAt;
+
   // ── Salesmen ───────────────────────────────────────────────────────────────
   final BayanErpStatus salesmenStatus;
   final List<SalesmanModel> salesmen;
@@ -97,44 +101,47 @@ final class BayanErpState extends Equatable {
   int get pageSize => AppConstants.erpPageSize;
 
   BayanErpStatus get activeStatus => switch (activeTab) {
-        BayanErpTab.customers => customersStatus,
-        BayanErpTab.products => productsStatus,
-        BayanErpTab.salesmen => salesmenStatus,
-        BayanErpTab.agents => agentsStatus,
-        BayanErpTab.stores => storesStatus,
-      };
+    BayanErpTab.customers => customersStatus,
+    BayanErpTab.products => productsStatus,
+    BayanErpTab.salesmen => salesmenStatus,
+    BayanErpTab.agents => agentsStatus,
+    BayanErpTab.stores => storesStatus,
+  };
 
   /// Zero-based page index for the active tab (0 if tab has no pagination).
   int get activePage => switch (activeTab) {
-        BayanErpTab.customers => customersPage,
-        BayanErpTab.products => productsPage,
-        BayanErpTab.agents => agentsPage,
-        _ => 0,
-      };
+    BayanErpTab.customers => customersPage,
+    BayanErpTab.products => productsPage,
+    BayanErpTab.agents => agentsPage,
+    _ => 0,
+  };
 
   /// True if there may be a next page (last fetch returned a full page).
   bool get canGoNext => switch (activeTab) {
-        BayanErpTab.customers => customers.length >= pageSize,
-        BayanErpTab.products => products.length >= productsPageSize,
-        BayanErpTab.agents => agents.length >= pageSize,
-        _ => false,
-      };
+    BayanErpTab.customers => customers.length >= pageSize,
+    BayanErpTab.products => products.length >= productsPageSize,
+    BayanErpTab.agents => agents.length >= pageSize,
+    _ => false,
+  };
 
   bool get canGoPrev => activePage > 0;
 
   bool get hasPagination => switch (activeTab) {
-        BayanErpTab.customers || BayanErpTab.products || BayanErpTab.agents => true,
-        _ => false,
-      };
+    BayanErpTab.customers || BayanErpTab.products || BayanErpTab.agents => true,
+    _ => false,
+  };
 
-  bool get hasProductFilters => productsQuery.isNotEmpty || productsStockFilter != null;
+  bool get hasProductFilters =>
+      productsQuery.isNotEmpty || productsStockFilter != null;
 
   List<ErpProductModel> get visibleProducts {
     if (!hasProductFilters) return products;
     final query = productsQuery.trim().toLowerCase();
     final level = productsStockFilter;
     return products
-        .where((p) => (level == null || p.stockLevel == level) && p.matches(query))
+        .where(
+          (p) => (level == null || p.stockLevel == level) && p.matches(query),
+        )
         .toList(growable: false);
   }
 
@@ -175,6 +182,7 @@ final class BayanErpState extends Equatable {
     String? productsQuery,
     ErpStockLevel? productsStockFilter,
     bool clearProductsStockFilter = false,
+    DateTime? productsLastSyncAt,
     // Salesmen
     BayanErpStatus? salesmenStatus,
     List<SalesmanModel>? salesmen,
@@ -191,44 +199,66 @@ final class BayanErpState extends Equatable {
     List<StoreModel>? stores,
     AppError? storesError,
     bool clearStoresError = false,
-  }) =>
-      BayanErpState(
-        activeTab: activeTab ?? this.activeTab,
-        sinceDate: clearSinceDate ? null : (sinceDate ?? this.sinceDate),
-        customersStatus: customersStatus ?? this.customersStatus,
-        customers: customers ?? this.customers,
-        customersPage: customersPage ?? this.customersPage,
-        customersError: clearCustomersError ? null : (customersError ?? this.customersError),
-        productsStatus: productsStatus ?? this.productsStatus,
-        products: products ?? this.products,
-        productsPage: productsPage ?? this.productsPage,
-        productsError: clearProductsError ? null : (productsError ?? this.productsError),
-        productsPageSize: productsPageSize ?? this.productsPageSize,
-        productsQuery: productsQuery ?? this.productsQuery,
-        productsStockFilter: clearProductsStockFilter
-            ? null
-            : (productsStockFilter ?? this.productsStockFilter),
-        salesmenStatus: salesmenStatus ?? this.salesmenStatus,
-        salesmen: salesmen ?? this.salesmen,
-        salesmenError: clearSalesmenError ? null : (salesmenError ?? this.salesmenError),
-        agentsStatus: agentsStatus ?? this.agentsStatus,
-        agents: agents ?? this.agents,
-        agentsPage: agentsPage ?? this.agentsPage,
-        agentsError: clearAgentsError ? null : (agentsError ?? this.agentsError),
-        storesStatus: storesStatus ?? this.storesStatus,
-        stores: stores ?? this.stores,
-        storesError: clearStoresError ? null : (storesError ?? this.storesError),
-      );
+  }) => BayanErpState(
+    activeTab: activeTab ?? this.activeTab,
+    sinceDate: clearSinceDate ? null : (sinceDate ?? this.sinceDate),
+    customersStatus: customersStatus ?? this.customersStatus,
+    customers: customers ?? this.customers,
+    customersPage: customersPage ?? this.customersPage,
+    customersError: clearCustomersError
+        ? null
+        : (customersError ?? this.customersError),
+    productsStatus: productsStatus ?? this.productsStatus,
+    products: products ?? this.products,
+    productsPage: productsPage ?? this.productsPage,
+    productsError: clearProductsError
+        ? null
+        : (productsError ?? this.productsError),
+    productsPageSize: productsPageSize ?? this.productsPageSize,
+    productsQuery: productsQuery ?? this.productsQuery,
+    productsStockFilter: clearProductsStockFilter
+        ? null
+        : (productsStockFilter ?? this.productsStockFilter),
+    productsLastSyncAt: productsLastSyncAt ?? this.productsLastSyncAt,
+    salesmenStatus: salesmenStatus ?? this.salesmenStatus,
+    salesmen: salesmen ?? this.salesmen,
+    salesmenError: clearSalesmenError
+        ? null
+        : (salesmenError ?? this.salesmenError),
+    agentsStatus: agentsStatus ?? this.agentsStatus,
+    agents: agents ?? this.agents,
+    agentsPage: agentsPage ?? this.agentsPage,
+    agentsError: clearAgentsError ? null : (agentsError ?? this.agentsError),
+    storesStatus: storesStatus ?? this.storesStatus,
+    stores: stores ?? this.stores,
+    storesError: clearStoresError ? null : (storesError ?? this.storesError),
+  );
 
   @override
   List<Object?> get props => [
-        activeTab,
-        sinceDate,
-        customersStatus, customers, customersPage, customersError,
-        productsStatus, products, productsPage, productsError,
-        productsPageSize, productsQuery, productsStockFilter,
-        salesmenStatus, salesmen, salesmenError,
-        agentsStatus, agents, agentsPage, agentsError,
-        storesStatus, stores, storesError,
-      ];
+    activeTab,
+    sinceDate,
+    customersStatus,
+    customers,
+    customersPage,
+    customersError,
+    productsStatus,
+    products,
+    productsPage,
+    productsError,
+    productsPageSize,
+    productsQuery,
+    productsStockFilter,
+    productsLastSyncAt,
+    salesmenStatus,
+    salesmen,
+    salesmenError,
+    agentsStatus,
+    agents,
+    agentsPage,
+    agentsError,
+    storesStatus,
+    stores,
+    storesError,
+  ];
 }

@@ -8,9 +8,14 @@ import '../utils/erp_formatters.dart';
 import '../utils/erp_group_style.dart';
 import '../utils/erp_stock_style.dart';
 import 'erp_products_pagination_widget.dart';
+import 'erp_registration_widgets.dart';
 
 class ErpProductsTableWidget extends StatefulWidget {
-  const ErpProductsTableWidget({super.key, required this.rows, this.onAddToPlatforms});
+  const ErpProductsTableWidget({
+    super.key,
+    required this.rows,
+    this.onAddToPlatforms,
+  });
 
   final List<ErpProductModel> rows;
   final ValueChanged<ErpProductModel>? onAddToPlatforms;
@@ -37,16 +42,16 @@ class _ErpProductsTableWidgetState extends State<ErpProductsTableWidget> {
   }
 
   void _toggle(int id) => setState(() {
-        if (!_selected.remove(id)) _selected.add(id);
-      });
+    if (!_selected.remove(id)) _selected.add(id);
+  });
 
   void _toggleAll() => setState(() {
-        if (_selected.length == widget.rows.length) {
-          _selected.clear();
-        } else {
-          _selected.addAll(widget.rows.map((p) => p.id));
-        }
-      });
+    if (_selected.length == widget.rows.length) {
+      _selected.clear();
+    } else {
+      _selected.addAll(widget.rows.map((p) => p.id));
+    }
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +67,11 @@ class _ErpProductsTableWidgetState extends State<ErpProductsTableWidget> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppTheme.border),
         boxShadow: const [
-          BoxShadow(color: Color(0x0A0F172A), blurRadius: 12, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x0A0F172A),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -91,7 +100,9 @@ class _ErpProductsTableWidgetState extends State<ErpProductsTableWidget> {
                               product: product,
                               selected: _selected.contains(product.id),
                               onToggle: () => _toggle(product.id),
-                              onAddToPlatforms: onAdd == null ? null : () => onAdd(product),
+                              onAddToPlatforms: onAdd == null
+                                  ? null
+                                  : () => onAdd(product),
                             );
                           },
                         ),
@@ -124,10 +135,20 @@ abstract final class _Cols {
   static const double price = 104;
   static const double currency = 100;
   static const double group = 104;
+  static const double platforms = 132;
   static const double actions = 176;
 
   static const double minTableWidth =
-      hPad * 2 + check + id + productMin + shortName + stock + price * 5 + currency + group;
+      hPad * 2 +
+      check +
+      id +
+      productMin +
+      shortName +
+      stock +
+      price * 5 +
+      currency +
+      group +
+      platforms;
 
   static const priceHeaders = [
     ('PRICE 1', 'RETAIL'),
@@ -159,12 +180,12 @@ class _Cell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: width,
-        color: color,
-        alignment: alignment,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: child,
-      );
+    width: width,
+    color: color,
+    alignment: alignment,
+    padding: const EdgeInsets.symmetric(horizontal: 10),
+    child: child,
+  );
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -207,7 +228,10 @@ class _HeaderRow extends StatelessWidget {
               ),
             ),
           ),
-          const _Cell(width: _Cols.shortName, child: _HeaderText('SHORT\nNAME')),
+          const _Cell(
+            width: _Cols.shortName,
+            child: _HeaderText('SHORT\nNAME'),
+          ),
           const _Cell(
             width: _Cols.stock,
             alignment: Alignment.center,
@@ -232,6 +256,7 @@ class _HeaderRow extends StatelessWidget {
             child: _HeaderText('CURRENCY', align: TextAlign.center),
           ),
           const _Cell(width: _Cols.group, child: _HeaderText('GROUP')),
+          const _Cell(width: _Cols.platforms, child: _HeaderText('PLATFORMS')),
           if (showActions)
             const _Cell(
               width: _Cols.actions,
@@ -245,7 +270,11 @@ class _HeaderRow extends StatelessWidget {
 }
 
 class _HeaderText extends StatelessWidget {
-  const _HeaderText(this.text, {this.align = TextAlign.left, this.emphasized = false});
+  const _HeaderText(
+    this.text, {
+    this.align = TextAlign.left,
+    this.emphasized = false,
+  });
 
   final String text;
   final TextAlign align;
@@ -253,17 +282,17 @@ class _HeaderText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        text,
-        textAlign: align,
-        maxLines: 2,
-        style: TextStyle(
-          fontSize: 11,
-          height: 1.35,
-          letterSpacing: 0.5,
-          fontWeight: FontWeight.w700,
-          color: emphasized ? AppTheme.textPrimary : AppTheme.textSecondary,
-        ),
-      );
+    text,
+    textAlign: align,
+    maxLines: 2,
+    style: TextStyle(
+      fontSize: 11,
+      height: 1.35,
+      letterSpacing: 0.5,
+      fontWeight: FontWeight.w700,
+      color: emphasized ? AppTheme.textPrimary : AppTheme.textSecondary,
+    ),
+  );
 }
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
@@ -306,7 +335,10 @@ class _ProductRow extends StatelessWidget {
               ),
               _Cell(
                 width: _Cols.id,
-                child: Text('#${product.id.toString().padLeft(4, '0')}', style: _idStyle),
+                child: Text(
+                  '#${product.id.toString().padLeft(4, '0')}',
+                  style: _idStyle,
+                ),
               ),
               Expanded(
                 child: Padding(
@@ -322,7 +354,10 @@ class _ProductRow extends StatelessWidget {
                         product.shortName,
                         textDirection: TextDirection.rtl,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
               ),
               _Cell(
@@ -335,14 +370,24 @@ class _ProductRow extends StatelessWidget {
                   width: _Cols.price,
                   alignment: Alignment.centerRight,
                   color: i == _Cols.highlightedTier ? _Cols.rowBand : null,
-                  child: _PriceText(tiers[i], highlighted: i == _Cols.highlightedTier),
+                  child: _PriceText(
+                    tiers[i],
+                    highlighted: i == _Cols.highlightedTier,
+                  ),
                 ),
               _Cell(
                 width: _Cols.currency,
                 alignment: Alignment.center,
                 child: _CurrencyBadge(currency: product.currency),
               ),
-              _Cell(width: _Cols.group, child: _GroupBadge(groupId: product.parentId)),
+              _Cell(
+                width: _Cols.group,
+                child: _GroupBadge(groupId: product.parentId),
+              ),
+              _Cell(
+                width: _Cols.platforms,
+                child: ErpRegistrationBadges(productId: product.id),
+              ),
               if (onAddToPlatforms != null)
                 _Cell(
                   width: _Cols.actions,
@@ -380,15 +425,15 @@ class _TableCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Checkbox(
-        value: value,
-        tristate: value == null,
-        onChanged: (_) => onChanged(),
-        activeColor: AppTheme.primary,
-        visualDensity: VisualDensity.compact,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      );
+    value: value,
+    tristate: value == null,
+    onChanged: (_) => onChanged(),
+    activeColor: AppTheme.primary,
+    visualDensity: VisualDensity.compact,
+    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+  );
 }
 
 class _ProductNameCell extends StatelessWidget {
@@ -438,7 +483,10 @@ class _ProductNameCell extends StatelessWidget {
                 subtitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: AppTheme.textMuted,
+                ),
               ),
             ],
           ),
@@ -476,7 +524,11 @@ class _StockPill extends StatelessWidget {
             child: Text(
               '${ErpFormatters.quantity(product.quantity)} Units',
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -512,21 +564,21 @@ class _CurrencyBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceAlt,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: Text(
-          currency == 0 ? 'Default' : 'Code $currency',
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: AppTheme.surfaceAlt,
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(color: AppTheme.border),
+    ),
+    child: Text(
+      currency == 0 ? 'Default' : 'Code $currency',
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: AppTheme.textSecondary,
+      ),
+    ),
+  );
 }
 
 class _AddToPlatformsButton extends StatelessWidget {
@@ -536,34 +588,38 @@ class _AddToPlatformsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-        message: 'Publish to Keeta / HungerStation',
-        child: Material(
-          color: const Color(0x143D5AFE),
-          borderRadius: BorderRadius.circular(8),
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(8),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add_business_outlined, size: 15, color: AppTheme.primary),
-                  SizedBox(width: 6),
-                  Text(
-                    'Add to platforms',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                ],
+    message: 'Publish to Keeta / HungerStation',
+    child: Material(
+      color: const Color(0x143D5AFE),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.add_business_outlined,
+                size: 15,
+                color: AppTheme.primary,
               ),
-            ),
+              SizedBox(width: 6),
+              Text(
+                'Add to platforms',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primary,
+                ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _GroupBadge extends StatelessWidget {

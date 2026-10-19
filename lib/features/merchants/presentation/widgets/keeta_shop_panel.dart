@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/errors/app_error.dart';
+import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/widgets/error_view.dart';
@@ -10,6 +11,8 @@ import '../cubit/keeta_shop_cubit.dart';
 import '../l10n/merchants_strings.dart';
 import 'business_hours_list.dart';
 import 'emergency_status_dialog.dart';
+import 'keeta_hours_dialog.dart';
+import 'keeta_service_status.dart';
 import 'shop_status_badge.dart';
 
 void showKeetaShopPanel(BuildContext context, {required String dongleNumber}) {
@@ -261,8 +264,31 @@ class _Body extends StatelessWidget {
               ],
             ),
           ),
+          if (state.selectedShopId != null) ...[
+            const SizedBox(height: 14),
+            // Re-reads Keeta whenever the shop is switched or opened / closed.
+            KeetaServiceStatus(
+              key: ValueKey('${state.selectedShopId}-$available'),
+              shopId: state.selectedShopId!,
+            ),
+          ],
           const SizedBox(height: 20),
-          _Label(s.businessHoursLocal),
+          Row(
+            children: [
+              Expanded(child: _Label(s.businessHoursLocal)),
+              if (state.selectedShopId != null)
+                TextButton.icon(
+                  onPressed: () async {
+                    final cubit = context.read<KeetaShopCubit>();
+                    final shopId = state.selectedShopId!;
+                    final saved = await showKeetaHoursDialog(context, shopId: shopId);
+                    if (saved == true) cubit.selectShop(shopId);
+                  },
+                  icon: const Icon(Icons.edit_calendar_rounded, size: 16),
+                  label: Text(context.isArabic ? 'تعديل الساعات' : 'Edit hours'),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),

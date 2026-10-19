@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/errors/app_error.dart';
+import '../../../../core/storage/app_preferences.dart';
 import '../../data/repositories/bayan_erp_repository.dart';
 import 'bayan_erp_event.dart';
 import 'bayan_erp_state.dart';
@@ -14,9 +18,16 @@ import 'bayan_erp_state.dart';
 /// - **Guard against concurrent fetches**: a tab that is already loading will
 ///   not trigger a second request.
 class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
-  BayanErpBloc({required BayanErpRepository repository})
-      : _repo = repository,
-        super(const BayanErpState()) {
+  BayanErpBloc({
+    required BayanErpRepository repository,
+    required AppPreferences preferences,
+    Duration syncInterval = AppConstants.erpSyncInterval,
+  }) : _repo = repository,
+       _prefs = preferences,
+       super(
+         BayanErpState(productsLastSyncAt: preferences.erpProductsLastSync),
+       ) {
+    on<BayanErpProductsSyncRequested>(_onProductsSync);
     on<BayanErpTabSelected>(_onTabSelected);
     on<BayanErpRefreshRequested>(_onRefreshRequested);
     on<BayanErpDateChanged>(_onDateChanged);
@@ -26,11 +37,43 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     on<BayanErpProductsPageSizeChanged>(_onProductsPageSizeChanged);
     on<BayanErpProductsSearchChanged>(_onProductsSearchChanged);
     on<BayanErpProductsStockFilterChanged>(_onProductsStockFilterChanged);
+    _syncTimer = Timer.periodic(
+      syncInterval,
+      (_) => add(const BayanErpProductsSyncRequested()),
+    );
   }
 
   final BayanErpRepository _repo;
+  final AppPreferences _prefs;
+  late final Timer _syncTimer;
+
+  @override
+  Future<void> close() {
+    _syncTimer.cancel();
+    return super.close();
+  }
 
   // ─── Event handlers ───────────────────────────────────────────────────────
+
+  Future<void> _onProductsSync(
+    BayanErpProductsSyncRequested event,
+    Emitter<BayanErpState> emit,
+  ) async {
+    // Nothing loaded yet, or a fetch is in flight: that fetch is the sync.
+    if (state.productsStatus != BayanErpStatus.success) return;
+    try {
+      final data = await _repo.getProducts(
+        since: state.sinceDate,
+        offset: state.productsPage * state.productsPageSize,
+        limit: state.productsPageSize,
+      );
+      final now = DateTime.now();
+      await _prefs.setErpProductsLastSync(now);
+      emit(state.copyWith(products: data, productsLastSyncAt: now));
+    } catch (_) {
+      // Keep the list and the old sync time; the next tick retries.
+    }
+  }
 
   Future<void> _onTabSelected(
     BayanErpTabSelected event,
@@ -47,19 +90,21 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
   Future<void> _onRefreshRequested(
     BayanErpRefreshRequested event,
     Emitter<BayanErpState> emit,
-  ) =>
-      _fetchActive(emit, force: true);
+  ) => _fetchActive(emit, force: true);
 
   Future<void> _onDateChanged(
     BayanErpDateChanged event,
     Emitter<BayanErpState> emit,
   ) async {
     // Reset every tab back to initial so all re-fetch with the new filter.
-    emit(BayanErpState(
-      activeTab: state.activeTab,
-      sinceDate: event.date,
-      productsPageSize: state.productsPageSize,
-    ));
+    emit(
+      BayanErpState(
+        productsLastSyncAt: state.productsLastSyncAt,
+        activeTab: state.activeTab,
+        sinceDate: event.date,
+        productsPageSize: state.productsPageSize,
+      ),
+    );
     await _fetchActive(emit);
   }
 
@@ -85,7 +130,11 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     BayanErpPageSelected event,
     Emitter<BayanErpState> emit,
   ) async {
-    if (!state.hasPagination || event.page < 0 || event.page == state.activePage) return;
+    if (!state.hasPagination ||
+        event.page < 0 ||
+        event.page == state.activePage) {
+      return;
+    }
     emit(_withPage(state, event.page));
     await _fetchActive(emit, force: true);
   }
@@ -112,9 +161,11 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     Emitter<BayanErpState> emit,
   ) {
     if (event.level == state.productsStockFilter) return;
-    emit(event.level == null
-        ? state.copyWith(clearProductsStockFilter: true)
-        : state.copyWith(productsStockFilter: event.level));
+    emit(
+      event.level == null
+          ? state.copyWith(clearProductsStockFilter: true)
+          : state.copyWith(productsStockFilter: event.level),
+    );
   }
 
   // ─── Routing ──────────────────────────────────────────────────────────────
@@ -122,14 +173,13 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
   Future<void> _fetchActive(
     Emitter<BayanErpState> emit, {
     bool force = false,
-  }) =>
-      switch (state.activeTab) {
-        BayanErpTab.customers => _fetchCustomers(emit, force: force),
-        BayanErpTab.products => _fetchProducts(emit, force: force),
-        BayanErpTab.salesmen => _fetchSalesmen(emit, force: force),
-        BayanErpTab.agents => _fetchAgents(emit, force: force),
-        BayanErpTab.stores => _fetchStores(emit, force: force),
-      };
+  }) => switch (state.activeTab) {
+    BayanErpTab.customers => _fetchCustomers(emit, force: force),
+    BayanErpTab.products => _fetchProducts(emit, force: force),
+    BayanErpTab.salesmen => _fetchSalesmen(emit, force: force),
+    BayanErpTab.agents => _fetchAgents(emit, force: force),
+    BayanErpTab.stores => _fetchStores(emit, force: force),
+  };
 
   // ─── Per-tab fetchers ─────────────────────────────────────────────────────
 
@@ -138,22 +188,31 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     bool force = false,
   }) async {
     if (!force && state.customersStatus == BayanErpStatus.loading) return;
-    emit(state.copyWith(
-      customersStatus: BayanErpStatus.loading,
-      clearCustomersError: true,
-    ));
+    emit(
+      state.copyWith(
+        customersStatus: BayanErpStatus.loading,
+        clearCustomersError: true,
+      ),
+    );
     try {
       final data = await _repo.getCustomers(
         since: state.sinceDate,
         offset: state.customersPage * state.pageSize,
         limit: state.pageSize,
       );
-      emit(state.copyWith(customersStatus: BayanErpStatus.success, customers: data));
+      emit(
+        state.copyWith(
+          customersStatus: BayanErpStatus.success,
+          customers: data,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        customersStatus: BayanErpStatus.failure,
-        customersError: AppError.from(e),
-      ));
+      emit(
+        state.copyWith(
+          customersStatus: BayanErpStatus.failure,
+          customersError: AppError.from(e),
+        ),
+      );
     }
   }
 
@@ -162,22 +221,34 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     bool force = false,
   }) async {
     if (!force && state.productsStatus == BayanErpStatus.loading) return;
-    emit(state.copyWith(
-      productsStatus: BayanErpStatus.loading,
-      clearProductsError: true,
-    ));
+    emit(
+      state.copyWith(
+        productsStatus: BayanErpStatus.loading,
+        clearProductsError: true,
+      ),
+    );
     try {
       final data = await _repo.getProducts(
         since: state.sinceDate,
         offset: state.productsPage * state.productsPageSize,
         limit: state.productsPageSize,
       );
-      emit(state.copyWith(productsStatus: BayanErpStatus.success, products: data));
+      final now = DateTime.now();
+      await _prefs.setErpProductsLastSync(now);
+      emit(
+        state.copyWith(
+          productsStatus: BayanErpStatus.success,
+          products: data,
+          productsLastSyncAt: now,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        productsStatus: BayanErpStatus.failure,
-        productsError: AppError.from(e),
-      ));
+      emit(
+        state.copyWith(
+          productsStatus: BayanErpStatus.failure,
+          productsError: AppError.from(e),
+        ),
+      );
     }
   }
 
@@ -186,18 +257,24 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     bool force = false,
   }) async {
     if (!force && state.salesmenStatus == BayanErpStatus.loading) return;
-    emit(state.copyWith(
-      salesmenStatus: BayanErpStatus.loading,
-      clearSalesmenError: true,
-    ));
+    emit(
+      state.copyWith(
+        salesmenStatus: BayanErpStatus.loading,
+        clearSalesmenError: true,
+      ),
+    );
     try {
       final data = await _repo.getSalesmen(since: state.sinceDate);
-      emit(state.copyWith(salesmenStatus: BayanErpStatus.success, salesmen: data));
+      emit(
+        state.copyWith(salesmenStatus: BayanErpStatus.success, salesmen: data),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        salesmenStatus: BayanErpStatus.failure,
-        salesmenError: AppError.from(e),
-      ));
+      emit(
+        state.copyWith(
+          salesmenStatus: BayanErpStatus.failure,
+          salesmenError: AppError.from(e),
+        ),
+      );
     }
   }
 
@@ -206,10 +283,12 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     bool force = false,
   }) async {
     if (!force && state.agentsStatus == BayanErpStatus.loading) return;
-    emit(state.copyWith(
-      agentsStatus: BayanErpStatus.loading,
-      clearAgentsError: true,
-    ));
+    emit(
+      state.copyWith(
+        agentsStatus: BayanErpStatus.loading,
+        clearAgentsError: true,
+      ),
+    );
     try {
       // getAgent uses 1-based page numbers.
       final data = await _repo.getAgents(
@@ -219,10 +298,12 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
       );
       emit(state.copyWith(agentsStatus: BayanErpStatus.success, agents: data));
     } catch (e) {
-      emit(state.copyWith(
-        agentsStatus: BayanErpStatus.failure,
-        agentsError: AppError.from(e),
-      ));
+      emit(
+        state.copyWith(
+          agentsStatus: BayanErpStatus.failure,
+          agentsError: AppError.from(e),
+        ),
+      );
     }
   }
 
@@ -231,18 +312,22 @@ class BayanErpBloc extends Bloc<BayanErpEvent, BayanErpState> {
     bool force = false,
   }) async {
     if (!force && state.storesStatus == BayanErpStatus.loading) return;
-    emit(state.copyWith(
-      storesStatus: BayanErpStatus.loading,
-      clearStoresError: true,
-    ));
+    emit(
+      state.copyWith(
+        storesStatus: BayanErpStatus.loading,
+        clearStoresError: true,
+      ),
+    );
     try {
       final data = await _repo.getStores(since: state.sinceDate);
       emit(state.copyWith(storesStatus: BayanErpStatus.success, stores: data));
     } catch (e) {
-      emit(state.copyWith(
-        storesStatus: BayanErpStatus.failure,
-        storesError: AppError.from(e),
-      ));
+      emit(
+        state.copyWith(
+          storesStatus: BayanErpStatus.failure,
+          storesError: AppError.from(e),
+        ),
+      );
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../products/presentation/cubit/product_registry_cubit.dart';
 import '../../data/models/erp_product_model.dart';
 import '../bloc/bayan_erp_bloc.dart';
 import '../bloc/bayan_erp_event.dart';
@@ -9,7 +10,9 @@ import '../bloc/bayan_erp_state.dart';
 import '_erp_table_shell.dart';
 import 'erp_product_card_widget.dart';
 import 'erp_products_pagination_widget.dart';
+import 'erp_registration_widgets.dart';
 import 'erp_products_table_widget.dart';
+import 'erp_products_tree_widget.dart';
 import 'erp_products_toolbar_widget.dart';
 
 /// Products tab: toolbar (search, stock filters, view toggle) over a card grid
@@ -24,7 +27,8 @@ class ErpProductsTabWidget extends StatefulWidget {
 }
 
 class _ErpProductsTabWidgetState extends State<ErpProductsTabWidget> {
-  ErpProductsViewMode _viewMode = ErpProductsViewMode.grid;
+  ErpProductsViewMode _viewMode = ErpProductsViewMode.tree;
+  ErpRegistrationFilter _registration = ErpRegistrationFilter.all;
 
   @override
   Widget build(BuildContext context) {
@@ -34,48 +38,83 @@ class _ErpProductsTabWidgetState extends State<ErpProductsTabWidget> {
           viewMode: _viewMode,
           onViewModeChanged: (mode) => setState(() => _viewMode = mode),
         ),
+        BlocBuilder<BayanErpBloc, BayanErpState>(
+          buildWhen: (p, c) =>
+              p.products != c.products ||
+              p.productsQuery != c.productsQuery ||
+              p.productsStockFilter != c.productsStockFilter,
+          builder: (context, state) => ErpRegistrationBar(
+            filter: _registration,
+            onFilterChanged: (f) => setState(() => _registration = f),
+            products: state.visibleProducts,
+          ),
+        ),
         Expanded(
-          child: BlocBuilder<BayanErpBloc, BayanErpState>(
-            buildWhen: (p, c) =>
-                p.productsStatus != c.productsStatus ||
-                p.products != c.products ||
-                p.productsError != c.productsError ||
-                p.productsQuery != c.productsQuery ||
-                p.productsStockFilter != c.productsStockFilter,
-            builder: (context, state) {
-              final content = _ProductsContent(
-                products: state.visibleProducts,
-                viewMode: _viewMode,
-                hasFilters: state.hasProductFilters,
-                onAddToPlatforms: widget.onAddToPlatforms,
-              );
-              // Keep the current page on screen while the next one loads.
-              if (state.productsStatus == BayanErpStatus.loading &&
-                  state.products.isNotEmpty) {
-                return Stack(
-                  children: [
-                    content,
-                    const Positioned(
-                      top: 0,
-                      left: 24,
-                      right: 24,
-                      child: LinearProgressIndicator(minHeight: 2),
-                    ),
-                  ],
+          // A product registered while a filter is active must leave / enter
+          // the list; with no filter nothing here depends on the registry.
+          child: BlocListener<ProductRegistryCubit, ProductRegistryState>(
+            listenWhen: (p, c) =>
+                _registration != ErpRegistrationFilter.all &&
+                !identical(p.records, c.records),
+            listener: (_, _) => setState(() {}),
+            child: BlocBuilder<BayanErpBloc, BayanErpState>(
+              buildWhen: (p, c) =>
+                  p.productsStatus != c.productsStatus ||
+                  p.products != c.products ||
+                  p.productsError != c.productsError ||
+                  p.productsQuery != c.productsQuery ||
+                  p.productsStockFilter != c.productsStockFilter,
+              builder: (context, state) {
+                final content = _ProductsContent(
+                  products: _applyRegistration(context, state.visibleProducts),
+                  viewMode: _viewMode,
+                  hasFilters: state.hasProductFilters,
+                  onAddToPlatforms: widget.onAddToPlatforms,
                 );
-              }
-              return ErpTableShell(
-                status: state.productsStatus,
-                error: state.productsError,
-                isEmpty: state.products.isEmpty && state.productsPage == 0,
-                emptyLabel: 'No products found',
-                child: content,
-              );
-            },
+                // Keep the current page on screen while the next one loads.
+                if (state.productsStatus == BayanErpStatus.loading &&
+                    state.products.isNotEmpty) {
+                  return Stack(
+                    children: [
+                      content,
+                      const Positioned(
+                        top: 0,
+                        left: 24,
+                        right: 24,
+                        child: LinearProgressIndicator(minHeight: 2),
+                      ),
+                    ],
+                  );
+                }
+                return ErpTableShell(
+                  status: state.productsStatus,
+                  error: state.productsError,
+                  isEmpty: state.products.isEmpty && state.productsPage == 0,
+                  emptyLabel: 'No products found',
+                  child: content,
+                );
+              },
+            ),
           ),
         ),
       ],
     );
+  }
+}
+
+extension on _ErpProductsTabWidgetState {
+  /// Applies the registration filter. Reads the registry once per rebuild;
+  /// the rows themselves listen to their own record for the badges.
+  List<ErpProductModel> _applyRegistration(
+    BuildContext context,
+    List<ErpProductModel> products,
+  ) {
+    if (_registration == ErpRegistrationFilter.all) return products;
+    final registry = context.read<ProductRegistryCubit>().state;
+    return [
+      for (final p in products)
+        if (_registration.matches(registry, p)) p,
+    ];
   }
 }
 
@@ -95,14 +134,26 @@ class _ProductsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (viewMode == ErpProductsViewMode.table && products.isNotEmpty) {
-      return ErpProductsTableWidget(rows: products, onAddToPlatforms: onAddToPlatforms);
+      return ErpProductsTableWidget(
+        rows: products,
+        onAddToPlatforms: onAddToPlatforms,
+      );
+    }
+    if (viewMode == ErpProductsViewMode.tree && products.isNotEmpty) {
+      return ErpProductsTreeWidget(
+        products: products,
+        onAddToPlatforms: onAddToPlatforms,
+      );
     }
     return Column(
       children: [
         Expanded(
           child: products.isEmpty
               ? _NoMatchView(hasFilters: hasFilters)
-              : _ProductsGrid(products: products, onAddToPlatforms: onAddToPlatforms),
+              : _ProductsGrid(
+                  products: products,
+                  onAddToPlatforms: onAddToPlatforms,
+                ),
         ),
         Container(
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 20),
@@ -167,7 +218,11 @@ class _NoMatchView extends StatelessWidget {
               color: AppTheme.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.search_off_rounded, size: 34, color: AppTheme.primary),
+            child: const Icon(
+              Icons.search_off_rounded,
+              size: 34,
+              color: AppTheme.primary,
+            ),
           ),
           const SizedBox(height: 14),
           const Text(

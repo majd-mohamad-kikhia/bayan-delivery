@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_token.dart';
@@ -22,6 +24,10 @@ import 'platform_credentials.dart';
 ///   --dart-define=HS_SANDBOX=true
 /// ```
 ///
+/// In debug builds, anything not supplied falls back to placeholder values the
+/// backend's mock executor (`/api/execute`) accepts, so the publish flow works
+/// without real platform accounts. Release builds get no fallback.
+///
 /// Values are memoized; a save invalidates the memo.
 class PlatformCredentialsStore {
   PlatformCredentialsStore(this._prefs, {AuthToken? keetaSeedToken})
@@ -35,6 +41,13 @@ class PlatformCredentialsStore {
   static const _hsVendorId = 'platform.hs.vendor_id';
   static const _hsEnvironment = 'platform.hs.environment';
 
+  /// Placeholder credentials for the mock executor (debug builds only).
+  static final _mock =
+      kDebugMode && !Platform.environment.containsKey('FLUTTER_TEST');
+
+  static String _define(String value, String mockValue) =>
+      value.isNotEmpty ? value : (_mock ? mockValue : '');
+
   final SharedPreferences _prefs;
   final AuthToken? _keetaSeedOverride;
 
@@ -45,26 +58,38 @@ class PlatformCredentialsStore {
     appId:
         _prefs.getInt(_keetaAppId) ??
         int.tryParse(const String.fromEnvironment('KEETA_APP_ID')) ??
-        0,
+        (_mock ? 1 : 0),
     appSecret:
         _prefs.getString(_keetaAppSecret) ??
-        const String.fromEnvironment('KEETA_APP_SECRET'),
+        _define(
+          const String.fromEnvironment('KEETA_APP_SECRET'),
+          'mock-secret',
+        ),
   );
 
   HungerStationCredentials get hungerStation =>
       _hungerStation ??= HungerStationCredentials(
         clientId:
             _prefs.getString(_hsClientId) ??
-            const String.fromEnvironment('HS_CLIENT_ID'),
+            _define(
+              const String.fromEnvironment('HS_CLIENT_ID'),
+              'mock-client',
+            ),
         clientSecret:
             _prefs.getString(_hsClientSecret) ??
-            const String.fromEnvironment('HS_CLIENT_SECRET'),
+            _define(
+              const String.fromEnvironment('HS_CLIENT_SECRET'),
+              'mock-secret',
+            ),
         chainId:
             _prefs.getString(_hsChainId) ??
-            const String.fromEnvironment('HS_CHAIN_ID'),
+            _define(const String.fromEnvironment('HS_CHAIN_ID'), 'mock-chain'),
         vendorId:
             _prefs.getString(_hsVendorId) ??
-            const String.fromEnvironment('HS_VENDOR_ID'),
+            _define(
+              const String.fromEnvironment('HS_VENDOR_ID'),
+              'mock-vendor',
+            ),
         environment: switch (_prefs.getString(_hsEnvironment)) {
           'sandbox' => HsEnvironment.sandbox,
           'production' => HsEnvironment.production,
@@ -126,7 +151,10 @@ class PlatformCredentialsStore {
   }
 
   static AuthToken? _readKeetaSeed() {
-    const access = String.fromEnvironment('KEETA_ACCESS_TOKEN');
+    final access = _define(
+      const String.fromEnvironment('KEETA_ACCESS_TOKEN'),
+      'mock-keeta-access-token',
+    );
     if (access.isEmpty) return null;
     const refresh = String.fromEnvironment('KEETA_REFRESH_TOKEN');
     // Unix seconds; 0 = unknown.

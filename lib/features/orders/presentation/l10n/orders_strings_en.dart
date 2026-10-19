@@ -30,6 +30,24 @@ final class OrdersStringsEn extends OrdersStrings {
   @override
   String get noOrders => 'No orders';
   @override
+  String get allPlatforms => 'All';
+  @override
+  String get sidebarCollapse => 'Collapse';
+  @override
+  String get sidebarExpand => 'Expand menu';
+  @override
+  String get columnPreparing => 'Preparing';
+  @override
+  String get columnEndProcess => 'End process';
+  @override
+  String get columnAttention => 'Needs attention';
+  @override
+  String get newOrderTitle => 'NEW ORDER!';
+  @override
+  String newOrdersCount(int n) => '$n NEW ORDERS!';
+  @override
+  String get newOrderDismiss => 'OK, got it';
+  @override
   String get noArchivedOrders => 'No archived orders yet';
   @override
   String get actionFailed => "Couldn't update the order";
@@ -53,6 +71,36 @@ final class OrdersStringsEn extends OrdersStrings {
   String get items => 'Items';
   @override
   String get unknownItem => 'Unknown item';
+
+  @override
+  String get dateFilterTitle => 'Show orders from';
+
+  @override
+  String get dateToday => 'Today';
+
+  @override
+  String get dateYesterday => 'Yesterday';
+
+  @override
+  String get dateLast7Days => 'Last 7 days';
+
+  @override
+  String get dateThisMonth => 'This month';
+
+  @override
+  String get dateAll => 'All time';
+
+  @override
+  String get dateCustom => 'Custom range';
+
+  @override
+  String get dateCustomHelp => 'Pick the first and last day';
+
+  @override
+  String get addOns => 'Add-ons';
+
+  @override
+  String get itemSubtotal => 'Item';
   @override
   String eachPrice(String price) => '$price each';
   @override
@@ -116,6 +164,118 @@ final class OrdersStringsEn extends OrdersStrings {
   String get actionAgreeRefund => 'Agree refund';
   @override
   String get actionRejectRefund => 'Reject refund';
+
+  @override
+  String get menus => 'Menus';
+
+  @override
+  String get reports => 'Reports';
+
+  @override
+  String get actionSelfDispatch => 'Our courier';
+
+  @override
+  String get actionSelfDeliver => 'Delivered';
+
+  @override
+  String get actionCourier => 'Courier';
+
+  @override
+  String get actionPartialRefund => 'Partial refund';
+
+  @override
+  String get selfDeliveryBadge => 'Our delivery';
+
+  @override
+  String get courierDialogTitle => 'Courier details';
+
+  @override
+  String get courierDispatchSubtitle => 'Who is taking this order out?';
+
+  @override
+  String get courierDeliverSubtitle => 'Confirm the order reached the customer';
+
+  @override
+  String get courierUpdateSubtitle =>
+      'Update the courier shown to the customer';
+
+  @override
+  String get courierName => 'Courier name';
+
+  @override
+  String get courierPhone => 'Phone';
+
+  @override
+  String get courierPlate => 'Plate number';
+
+  @override
+  String get courierVehicle => 'Vehicle';
+
+  @override
+  String get vehicleWalking => 'On foot';
+
+  @override
+  String get vehicleBicycle => 'Bicycle';
+
+  @override
+  String get vehicleMotorcycle => 'Motorcycle';
+
+  @override
+  String get vehicleCar => 'Car';
+
+  @override
+  String get courierConfirmDispatch => 'Out for delivery';
+
+  @override
+  String get courierConfirmDeliver => 'Mark delivered';
+
+  @override
+  String get courierConfirmUpdate => 'Save courier';
+
+  @override
+  String get courierNeedsOne => 'Fill in at least one courier detail';
+
+  @override
+  String get refundTitle => 'Partial refund';
+
+  @override
+  String get refundSubtitle => 'Refund only the items that went wrong';
+
+  @override
+  String get refundLoading => 'Checking what can be refunded…';
+
+  @override
+  String get refundNothing => 'Nothing in this order can be refunded';
+
+  @override
+  String get refundAlready => 'refunded';
+
+  @override
+  String get refundReason => 'Reason';
+
+  @override
+  String get refundReasonOther => 'Other reason';
+
+  @override
+  String get refundReasonSlow => 'Slow preparation';
+
+  @override
+  String get refundReasonIngredients => 'Insufficient ingredients';
+
+  @override
+  String get refundReasonMissing => 'Missing or incomplete delivery';
+
+  @override
+  String get refundReasonWrong => 'Wrong item prepared';
+
+  @override
+  String get refundDescribe => 'Describe the reason';
+
+  @override
+  String get refundTotal => 'Refund total';
+
+  @override
+  String get refundApply => 'Refund';
 
   @override
   String get statusNew => 'New';

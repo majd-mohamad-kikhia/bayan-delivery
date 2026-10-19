@@ -60,23 +60,30 @@ class _CustomersTable extends StatelessWidget {
           ],
           rows: [
             for (final c in rows)
-              DataRow(cells: [
-                DataCell(Text('${c.id}', style: _monoStyle)),
-                DataCell(_ArabicText(c.name)),
-                DataCell(Text(c.phone.isEmpty ? '—' : c.phone)),
-                DataCell(
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 200),
-                    child: Text(
-                      c.address.isEmpty ? '—' : c.address,
-                      overflow: TextOverflow.ellipsis,
+              DataRow(
+                cells: [
+                  DataCell(Text('${c.id}', style: _monoStyle)),
+                  DataCell(_ArabicText(c.name)),
+                  DataCell(Text(c.phone.isEmpty ? '—' : c.phone)),
+                  DataCell(
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 200),
+                      child: Text(
+                        c.address.isEmpty ? '—' : c.address,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                ),
-                DataCell(_BalanceChip(c.balance)),
-                DataCell(Text(c.groupId == 0 ? '—' : '${c.groupId}', style: _monoStyle)),
-                DataCell(_PriceKindBadge(c.priceKind)),
-              ]),
+                  DataCell(_BalanceChip(c.balance)),
+                  DataCell(
+                    Text(
+                      c.groupId == 0 ? '—' : '${c.groupId}',
+                      style: _monoStyle,
+                    ),
+                  ),
+                  DataCell(_PriceKindBadge(c.priceKind)),
+                ],
+              ),
           ],
         ),
       ),
@@ -98,9 +105,9 @@ class _ArabicText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Text(text, overflow: TextOverflow.ellipsis),
-      );
+    textDirection: TextDirection.rtl,
+    child: Text(text, overflow: TextOverflow.ellipsis),
+  );
 }
 
 class _BalanceChip extends StatelessWidget {
@@ -134,7 +141,9 @@ class _PriceKindBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (kind.isEmpty) return const Text('—', style: TextStyle(color: AppTheme.textMuted));
+    if (kind.isEmpty) {
+      return const Text('—', style: TextStyle(color: AppTheme.textMuted));
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(

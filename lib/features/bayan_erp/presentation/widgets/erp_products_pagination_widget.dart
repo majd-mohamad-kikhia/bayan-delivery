@@ -58,7 +58,8 @@ class ErpProductsPaginationWidget extends StatelessWidget {
                   _PageSizeDropdown(
                     value: size,
                     enabled: !isLoading,
-                    onChanged: (v) => bloc.add(BayanErpProductsPageSizeChanged(v)),
+                    onChanged: (v) =>
+                        bloc.add(BayanErpProductsPageSizeChanged(v)),
                   ),
                   const SizedBox(width: 8),
                   Text.rich(
@@ -95,7 +96,11 @@ class ErpProductsPaginationWidget extends StatelessWidget {
                     if (entry == null)
                       const SizedBox(
                         width: 24,
-                        child: Text('…', textAlign: TextAlign.center, style: _mutedStyle),
+                        child: Text(
+                          '…',
+                          textAlign: TextAlign.center,
+                          style: _mutedStyle,
+                        ),
                       )
                     else
                       _PagerButton(
@@ -125,10 +130,13 @@ class ErpProductsPaginationWidget extends StatelessWidget {
 
   /// Zero-based pages to number, with `null` marking a gap (`…`).
   static List<int?> _pageEntries(int current, int lastKnown) {
-    final pages = {0, current - 1, current, current + 1, lastKnown}
-        .where((p) => p >= 0 && p <= lastKnown)
-        .toList()
-      ..sort();
+    final pages = {
+      0,
+      current - 1,
+      current,
+      current + 1,
+      lastKnown,
+    }.where((p) => p >= 0 && p <= lastKnown).toList()..sort();
     final entries = <int?>[];
     int? previous;
     for (final p in pages) {

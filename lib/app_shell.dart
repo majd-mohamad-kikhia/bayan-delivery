@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/navigation/app_section.dart';
+import 'core/storage/app_preferences.dart';
 import 'features/bayan_erp/data/models/erp_product_model.dart';
 import 'features/bayan_erp/presentation/screens/bayan_erp_screen.dart';
+import 'features/menus/presentation/pages/menus_page.dart';
 import 'features/merchants/presentation/widgets/hs_outlet_panel.dart';
+import 'features/reports/presentation/pages/reports_page.dart';
 import 'features/merchants/presentation/widgets/keeta_shop_panel.dart';
 import 'features/orders/presentation/bloc/orders_bloc.dart';
 import 'features/orders/presentation/pages/orders_page.dart';
 import 'features/orders/presentation/widgets/app_sidebar.dart';
+import 'features/products/data/erp_product_adapter.dart';
 import 'features/products/data/models/product_model.dart';
 import 'features/products/presentation/pages/products_page.dart';
 import 'features/products/presentation/pages/publish_product_page.dart';
@@ -22,6 +26,18 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   AppSection _section = AppSection.orders;
+  late bool _sidebarCollapsed;
+
+  @override
+  void initState() {
+    super.initState();
+    _sidebarCollapsed = context.read<AppPreferences>().sidebarCollapsed;
+  }
+
+  void _toggleSidebar() {
+    setState(() => _sidebarCollapsed = !_sidebarCollapsed);
+    context.read<AppPreferences>().setSidebarCollapsed(_sidebarCollapsed);
+  }
 
   /// ERP product currently open in the publish-to-platforms page.
   ProductModel? _erpPublishing;
@@ -38,7 +54,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _publishErpProduct(ErpProductModel product) =>
-      setState(() => _erpPublishing = _publishableFromErp(product));
+      setState(() => _erpPublishing = publishableFromErp(product));
 
   void _closeErpPublish() => setState(() => _erpPublishing = null);
 
@@ -51,12 +67,16 @@ class _AppShellState extends State<AppShell> {
             section: _section,
             onSectionChanged: (section) => setState(() => _section = section),
             onMerchantsTap: _openMerchants,
+            collapsed: _sidebarCollapsed,
+            onToggleCollapsed: _toggleSidebar,
           ),
           Expanded(
             child: switch (_section) {
               AppSection.orders => const OrdersPage(),
               AppSection.products => const ProductsPage(),
               AppSection.inventory => _buildInventory(),
+              AppSection.menus => const MenusPage(),
+              AppSection.reports => const ReportsPage(),
             },
           ),
         ],
@@ -80,29 +100,6 @@ class _AppShellState extends State<AppShell> {
             onClose: _closeErpPublish,
           ),
       ],
-    );
-  }
-
-  static final RegExp _arabic = RegExp(r'[؀-ۿ]');
-
-  /// Adapts a Bayan ERP product to the publish flow. The ERP id becomes the
-  /// SKU (Keeta `openItemCode`, HungerStation `sku`) so later stock and price
-  /// updates can find the product on each platform.
-  static ProductModel _publishableFromErp(ErpProductModel p) {
-    final nameIsArabic = _arabic.hasMatch(p.name);
-    final latinShortName = p.shortName.isNotEmpty && !_arabic.hasMatch(p.shortName);
-    return ProductModel(
-      id: 'erp-${p.id}',
-      sku: '${p.id}',
-      name: nameIsArabic && latinShortName ? p.shortName : p.name,
-      nameAr: nameIsArabic ? p.name : '',
-      // The ERP only exposes a group id; the category is chosen on the form.
-      category: '',
-      unit: '',
-      salePrice: p.price1 > 0 ? p.price1 : p.primaryPrice,
-      costPrice: 0,
-      stockQty: p.quantity,
-      isActive: true,
     );
   }
 }

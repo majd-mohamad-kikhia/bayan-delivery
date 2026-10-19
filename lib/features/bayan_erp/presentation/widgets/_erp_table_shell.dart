@@ -35,13 +35,13 @@ class ErpTableShell extends StatelessWidget {
     return switch (status) {
       BayanErpStatus.initial => const SizedBox.shrink(),
       BayanErpStatus.loading => const Center(
-          child: CircularProgressIndicator(strokeWidth: 2.5),
-        ),
+        child: CircularProgressIndicator(strokeWidth: 2.5),
+      ),
       BayanErpStatus.failure => ErrorView(
-          error: error ?? const AppError(AppErrorKind.unknown),
-          onRetry: () =>
-              context.read<BayanErpBloc>().add(const BayanErpRefreshRequested()),
-        ),
+        error: error ?? const AppError(AppErrorKind.unknown),
+        onRetry: () =>
+            context.read<BayanErpBloc>().add(const BayanErpRefreshRequested()),
+      ),
       BayanErpStatus.success when isEmpty => _EmptyView(label: emptyLabel),
       _ => child,
     };
@@ -56,13 +56,20 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inbox_outlined, size: 48, color: AppTheme.textMuted.withValues(alpha: 0.5)),
-            const SizedBox(height: 12),
-            Text(label, style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
-          ],
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.inbox_outlined,
+          size: 48,
+          color: AppTheme.textMuted.withValues(alpha: 0.5),
         ),
-      );
+        const SizedBox(height: 12),
+        Text(
+          label,
+          style: const TextStyle(color: AppTheme.textMuted, fontSize: 14),
+        ),
+      ],
+    ),
+  );
 }

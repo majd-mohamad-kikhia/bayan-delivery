@@ -10,6 +10,7 @@ abstract final class ErpFormatters {
     return buffer.toString();
   }
 
-  static String quantity(double value) =>
-      value == value.truncateToDouble() ? amount(value) : value.toStringAsFixed(2);
+  static String quantity(double value) => value == value.truncateToDouble()
+      ? amount(value)
+      : value.toStringAsFixed(2);
 }

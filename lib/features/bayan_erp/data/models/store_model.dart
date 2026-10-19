@@ -11,9 +11,9 @@ final class StoreModel extends Equatable {
   final String name;
 
   factory StoreModel.fromJson(Map<String, dynamic> json) => StoreModel(
-        id: (json['Id'] as num).toInt(),
-        name: (json['Name'] as String? ?? '').trim(),
-      );
+    id: (json['Id'] as num).toInt(),
+    name: (json['Name'] as String? ?? '').trim(),
+  );
 
   @override
   List<Object?> get props => [id, name];

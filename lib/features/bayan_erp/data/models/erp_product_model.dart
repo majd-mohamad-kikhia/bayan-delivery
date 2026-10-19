@@ -16,6 +16,7 @@ final class ErpProductModel extends Equatable {
     required this.price5,
     required this.currency,
     required this.parentId,
+    this.kind,
   });
 
   /// Quantities below this (but above zero) are reported as [ErpStockLevel.low].
@@ -46,6 +47,10 @@ final class ErpProductModel extends Equatable {
   /// Parent group identifier (`parent`).
   final int parentId;
 
+  /// `Kind`: 1 = a group (category), 0 = a sellable item. Null when the server
+  /// did not send it.
+  final int? kind;
+
   List<double> get priceTiers => [price1, price2, price3, price4, price5];
 
   /// Index of the first non-zero price tier, or -1 when the product is unpriced.
@@ -69,7 +74,8 @@ final class ErpProductModel extends Equatable {
       shortName.toLowerCase().contains(query) ||
       '$id'.contains(query);
 
-  factory ErpProductModel.fromJson(Map<String, dynamic> json) => ErpProductModel(
+  factory ErpProductModel.fromJson(Map<String, dynamic> json) =>
+      ErpProductModel(
         id: (json['Id'] as num).toInt(),
         name: (json['Name'] as String? ?? '').trim(),
         shortName: (json['SName'] as String? ?? '').trim(),
@@ -81,9 +87,22 @@ final class ErpProductModel extends Equatable {
         price5: (json['Price5'] as num? ?? 0).toDouble(),
         currency: (json['CURRENCY'] as num? ?? 0).toInt(),
         parentId: (json['parent'] as num? ?? 0).toInt(),
+        kind: (json['Kind'] as num?)?.toInt(),
       );
 
   @override
-  List<Object?> get props =>
-      [id, name, shortName, quantity, price1, price2, price3, price4, price5, currency, parentId];
+  List<Object?> get props => [
+    id,
+    name,
+    shortName,
+    quantity,
+    price1,
+    price2,
+    price3,
+    price4,
+    price5,
+    currency,
+    parentId,
+    kind,
+  ];
 }

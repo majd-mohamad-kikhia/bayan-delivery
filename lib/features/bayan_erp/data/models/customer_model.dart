@@ -34,15 +34,23 @@ final class CustomerModel extends Equatable {
   final String priceKind;
 
   factory CustomerModel.fromJson(Map<String, dynamic> json) => CustomerModel(
-        id: (json['Id'] as num).toInt(),
-        name: (json['Name'] as String? ?? '').trim(),
-        address: json['Address'] as String? ?? '',
-        phone: json['Phone'] as String? ?? '',
-        balance: (json['Balance'] as num? ?? 0).toDouble(),
-        groupId: (json['Id_group'] as num? ?? 0).toInt(),
-        priceKind: json['PriceKind'] as String? ?? '',
-      );
+    id: (json['Id'] as num).toInt(),
+    name: (json['Name'] as String? ?? '').trim(),
+    address: json['Address'] as String? ?? '',
+    phone: json['Phone'] as String? ?? '',
+    balance: (json['Balance'] as num? ?? 0).toDouble(),
+    groupId: (json['Id_group'] as num? ?? 0).toInt(),
+    priceKind: json['PriceKind'] as String? ?? '',
+  );
 
   @override
-  List<Object?> get props => [id, name, address, phone, balance, groupId, priceKind];
+  List<Object?> get props => [
+    id,
+    name,
+    address,
+    phone,
+    balance,
+    groupId,
+    priceKind,
+  ];
 }

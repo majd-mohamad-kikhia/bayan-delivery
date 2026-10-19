@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/platforms/common/platform_utils.dart';
@@ -8,6 +9,7 @@ import '../../../../core/platforms/platforms.dart';
 import '../../../../core/storage/app_preferences.dart';
 import '../../../../core/utils/async_cache.dart';
 import '../models/listing_models.dart';
+import '../models/product_model.dart';
 
 enum PublishPhase {
   idle,
@@ -79,17 +81,42 @@ enum PublishNotice {
 /// every failure becomes a [notice], plus the platform's own text or the
 /// offending value in [detail] when there is one.
 final class PublishOutcome extends Equatable {
-  const PublishOutcome(this.phase, this.notice, [this.detail]);
+  const PublishOutcome(
+    this.phase,
+    this.notice, [
+    this.detail,
+    this.platformNum,
+  ]);
 
   const PublishOutcome.failed(this.notice, [this.detail])
-    : phase = PublishPhase.failed;
+    : phase = PublishPhase.failed,
+      platformNum = null;
 
   final PublishPhase phase;
   final PublishNotice notice;
   final String? detail;
 
+  /// The product's number on that platform (Keeta SPU id, HungerStation
+  /// SKU) once it is there; what the registry stores.
+  final String? platformNum;
+
   @override
-  List<Object?> get props => [phase, notice, detail];
+  List<Object?> get props => [phase, notice, detail, platformNum];
+}
+
+/// One product found in a platform's own catalog.
+final class CatalogEntry extends Equatable {
+  const CatalogEntry({required this.sku, this.platformNum, this.name});
+
+  /// Our SKU (= Al-Bayan product id): Keeta `openItemCode`, HungerStation `sku`.
+  final String sku;
+
+  /// The platform's own id when it has one (Keeta SPU id).
+  final String? platformNum;
+  final String? name;
+
+  @override
+  List<Object?> get props => [sku, platformNum, name];
 }
 
 /// Stops a publish with a [PublishNotice]; [ProductPublishRepository.publish]
@@ -143,6 +170,10 @@ class ProductPublishRepository {
     maxAge: const Duration(minutes: 30),
   );
   final SingleFlight<int> _keetaCategoryCreation = SingleFlight<int>();
+  final AsyncCache<_Categories<int>> _keetaChoiceGroups = AsyncCache(
+    maxAge: const Duration(minutes: 10),
+  );
+  final SingleFlight<int> _keetaChoiceGroupCreation = SingleFlight<int>();
 
   /// Starts loading what [platformId] needs, ignoring errors — the real
   /// publish reports them.
@@ -167,6 +198,83 @@ class ProductPublishRepository {
     } on Object {
       return const [];
     }
+  }
+
+  /// Everything [platformId] currently lists, to learn which Al-Bayan
+  /// products are already there. Throws on a transport / platform error.
+  Future<List<CatalogEntry>> catalog(String platformId) async {
+    switch (platformId) {
+      case 'keeta':
+        final data = await _apis.keeta.menu.products(await _keetaShopId());
+        return parseKeetaCatalog(data);
+      case 'hungerstation':
+        final entries = <CatalogEntry>[];
+        const pageSize = 100;
+        for (var page = 1; ; page++) {
+          final body = await _apis.hungerStation.products(
+            page: page,
+            pageSize: pageSize,
+          );
+          final found = parseHsCatalog(body);
+          entries.addAll(found);
+          if (found.length < pageSize) break;
+        }
+        return entries;
+      default:
+        return const [];
+    }
+  }
+
+  /// Keeta nests its menu differently by endpoint version, so this walks the
+  /// whole response and takes every object that carries an `openItemCode`
+  /// (SPU and SKU levels share the code we assigned on publish).
+  @visibleForTesting
+  static List<CatalogEntry> parseKeetaCatalog(Object? data) {
+    final byCode = <String, CatalogEntry>{};
+    void walk(Object? node) {
+      if (node is Map) {
+        final code = node['openItemCode'];
+        if (code is String && code.trim().isNotEmpty) {
+          final id = node['id'];
+          final previous = byCode[code.trim()];
+          byCode[code.trim()] = CatalogEntry(
+            sku: code.trim(),
+            // The SPU object is the one that also has a skuList.
+            platformNum: id is num && node.containsKey('skuList')
+                ? '${id.toInt()}'
+                : previous?.platformNum,
+            name: (node['name'] as String?) ?? previous?.name,
+          );
+        }
+        node.values.forEach(walk);
+      } else if (node is List) {
+        node.forEach(walk);
+      }
+    }
+
+    walk(data);
+    return byCode.values.toList(growable: false);
+  }
+
+  @visibleForTesting
+  static List<CatalogEntry> parseHsCatalog(Object? body) {
+    final list = body is Map ? (body['products'] ?? body['items']) : body;
+    if (list is! List) return const [];
+    return [
+      for (final item in list.whereType<Map>())
+        if ((item['sku'] ?? item['vendor_sku']) case final Object sku
+            when '$sku'.trim().isNotEmpty)
+          CatalogEntry(
+            sku: '$sku'.trim(),
+            name: _hsTitle(item['title'] ?? item['name']),
+          ),
+    ];
+  }
+
+  static String? _hsTitle(Object? title) {
+    if (title is String) return title;
+    if (title is Map && title.isNotEmpty) return '${title.values.first}';
+    return null;
   }
 
   Future<PublishOutcome> publish(
@@ -196,10 +304,17 @@ class ProductPublishRepository {
     _validateKeeta(content, listing);
     final shopId = await _keetaShopId();
     final categoryId = await _keetaCategoryId(shopId, listing.category.trim());
+    final choiceGroups = [
+      for (final group in listing.addOnGroups)
+        {
+          ...keetaChoiceGroup(group),
+          'id': await _keetaChoiceGroupId(shopId, group),
+        },
+    ];
 
     final response = await _apis.keeta.menu.createProducts(
       shopId: shopId,
-      spuList: [keetaSpu(content, listing, categoryId)],
+      spuList: [keetaSpu(content, listing, categoryId, choiceGroups)],
     );
     if (response.hasPartialFailure) {
       final reason = _describe(response.errorList.first);
@@ -208,20 +323,30 @@ class ProductPublishRepository {
           : PublishOutcome.failed(PublishNotice.error, reason);
     }
 
-    // External image URLs can't go in the create call; bind them to the
-    // new SPU (Keeta fetches them asynchronously, errors → webhook 1201).
-    if (content.imageUrls.isEmpty) {
-      return const PublishOutcome(PublishPhase.published, PublishNotice.added);
-    }
     final spuId = response.dataList
         .where((spu) => spu['openItemCode'] == content.sku)
         .map((spu) => spu['id'])
         .whereType<num>()
         .firstOrNull;
+    // Keeta's own id when it came back, else our SKU (its `openItemCode`).
+    final platformNum = spuId == null ? content.sku : '${spuId.toInt()}';
+
+    // External image URLs can't go in the create call; bind them to the
+    // new SPU (Keeta fetches them asynchronously, errors → webhook 1201).
+    if (content.imageUrls.isEmpty) {
+      return PublishOutcome(
+        PublishPhase.published,
+        PublishNotice.added,
+        null,
+        platformNum,
+      );
+    }
     if (spuId == null) {
-      return const PublishOutcome(
+      return PublishOutcome(
         PublishPhase.published,
         PublishNotice.addedWithoutImages,
+        null,
+        platformNum,
       );
     }
     try {
@@ -234,6 +359,7 @@ class ProductPublishRepository {
           PublishPhase.published,
           PublishNotice.addedImagesRejected,
           _describe(bind.errorList),
+          platformNum,
         );
       }
     } on ApiException catch (e) {
@@ -241,9 +367,15 @@ class ProductPublishRepository {
         PublishPhase.published,
         PublishNotice.addedImagesRejected,
         e.message,
+        platformNum,
       );
     }
-    return const PublishOutcome(PublishPhase.published, PublishNotice.added);
+    return PublishOutcome(
+      PublishPhase.published,
+      PublishNotice.added,
+      null,
+      platformNum,
+    );
   }
 
   void _validateKeeta(ListingContent content, KeetaListing listing) {
@@ -273,8 +405,9 @@ class ProductPublishRepository {
   static Map<String, Object?> keetaSpu(
     ListingContent content,
     KeetaListing listing,
-    int categoryId,
-  ) {
+    int categoryId, [
+    List<Map<String, Object?>> choiceGroups = const [],
+  ]) {
     final hours = listing.limitedHours ? listing.sellingHours : null;
     return {
       ..._keetaText('name', content.nameEn, content.nameAr),
@@ -306,6 +439,8 @@ class ProductPublishRepository {
               for (final entry in listing.nutrition.entries)
                 entry.key.wire: entry.value,
             },
+          // Add-ons hang off the SKU, not the SPU (menu API: Sku.choiceGroupList).
+          if (choiceGroups.isNotEmpty) 'choiceGroupList': choiceGroups,
           'servingSize': ?listing.servingSize,
           'caffeine': ?listing.caffeineMg,
         },
@@ -407,6 +542,78 @@ class ProductPublishRepository {
     });
   }
 
+  // ── Keeta add-ons (choice groups) ─────────────────────────────────────────
+
+  Future<_Categories<int>> _keetaChoiceGroupIndex(
+    int shopId, {
+    bool refresh = false,
+  }) => _keetaChoiceGroups.get('$shopId', () async {
+    final data = await _apis.keeta.menu.choiceGroups(shopId);
+    final groups = _Categories<int>();
+    for (final group in data is List ? data.whereType<Map>() : const <Map>[]) {
+      final id = group['id'];
+      if (id is! num) continue;
+      groups.add(id.toInt(), [group['name'], group['nameTranslation']]);
+    }
+    return groups;
+  }, refresh: refresh);
+
+  /// The choice group named like [group], created on Keeta when missing.
+  Future<int> _keetaChoiceGroupId(int shopId, AddOnGroup group) async {
+    final cached = (await _keetaChoiceGroupIndex(shopId)).idOf(group.name);
+    if (cached != null) return cached;
+
+    final index = await _keetaChoiceGroupIndex(shopId, refresh: true);
+    final fresh = index.idOf(group.name);
+    if (fresh != null) return fresh;
+
+    return _keetaChoiceGroupCreation.run(
+      '$shopId|${_key(group.name)}',
+      () async {
+        final response = await _apis.keeta.menu.createChoiceGroups(
+          shopId: shopId,
+          choiceGroups: [keetaChoiceGroup(group)],
+        );
+        final id = response.dataList
+            .map((created) => created['id'])
+            .whereType<num>()
+            .firstOrNull;
+        if (id != null) {
+          index.add(id.toInt(), [group.name]);
+          return id.toInt();
+        }
+        _keetaChoiceGroups.invalidate('$shopId');
+        final created = (await _keetaChoiceGroupIndex(shopId)).idOf(group.name);
+        if (created == null) {
+          throw _PublishStop(PublishNotice.categoryNotCreated, group.name);
+        }
+        return created;
+      },
+    );
+  }
+
+  /// Body of one choice group for `/product/choicegroup/batchcreate`, per
+  /// Keeta's menu API: group name, `minNumber` / `maxNumber` picks, and each
+  /// option (a ChoiceGroupSku) with its own string `price` and `status`.
+  /// One group can be linked to many products.
+  @visibleForTesting
+  static Map<String, Object?> keetaChoiceGroup(AddOnGroup group) => {
+    ..._keetaText('name', group.name, ''),
+    'openItemCode': 'ADDON#${_key(group.name)}',
+    'minNumber': 0,
+    'maxNumber': group.options.length,
+    'repeatable': 0,
+    'choiceGroupSkuList': [
+      for (final option in group.options)
+        {
+          ..._keetaText('name', option.name, ''),
+          'openItemCode': option.sku,
+          'price': _money(option.price),
+          'status': 1,
+        },
+    ],
+  };
+
   // ── HungerStation ─────────────────────────────────────────────────────────
 
   Future<PublishOutcome> _publishToHungerStation(
@@ -446,9 +653,11 @@ class ProductPublishRepository {
           : PublishOutcome.failed(PublishNotice.error, reason);
     }
     if (!result.isCompleted) {
-      return const PublishOutcome(
+      return PublishOutcome(
         PublishPhase.processing,
         PublishNotice.processing,
+        null,
+        content.sku,
       );
     }
     // A completed job can still reject this product (e.g. images: poor quality).
@@ -459,9 +668,11 @@ class ProductPublishRepository {
 
     // Availability and stock aren't part of the add call.
     if (vendorId.isEmpty) {
-      return const PublishOutcome(
+      return PublishOutcome(
         PublishPhase.published,
         PublishNotice.addedWithoutStock,
+        null,
+        content.sku,
       );
     }
     await hs.updateProducts(
@@ -474,7 +685,12 @@ class ProductPublishRepository {
         ),
       ],
     );
-    return const PublishOutcome(PublishPhase.published, PublishNotice.added);
+    return PublishOutcome(
+      PublishPhase.published,
+      PublishNotice.added,
+      null,
+      content.sku,
+    );
   }
 
   void _validateHungerStation(ListingContent content, HsListing listing) {

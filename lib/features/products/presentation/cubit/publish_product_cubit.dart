@@ -3,13 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/listing_models.dart';
 import '../../data/models/product_model.dart';
 import '../../data/repositories/product_publish_repository.dart';
+import 'product_registry_cubit.dart';
 import 'publish_product_state.dart';
 
 final class PublishProductCubit extends Cubit<PublishProductState> {
   PublishProductCubit({
     required ProductModel product,
     required ProductPublishRepository repository,
+    ProductRegistryCubit? registry,
   }) : _repository = repository,
+       _registry = registry,
        super(
          PublishProductState(
            product: product,
@@ -24,6 +27,7 @@ final class PublishProductCubit extends Cubit<PublishProductState> {
        );
 
   final ProductPublishRepository _repository;
+  final ProductRegistryCubit? _registry;
 
   /// Category suggestions for [platformId] (cached by the repository).
   Future<List<String>> categoryNames(String platformId) =>
@@ -145,6 +149,16 @@ final class PublishProductCubit extends Cubit<PublishProductState> {
     final current = state.platforms[platformId];
     if (current == null) return;
     _put(current.copyWith(phase: outcome.phase, result: outcome));
+    // Live (or accepted and processing) = registered: remember it locally.
+    if (outcome.phase.isDone) {
+      _registry?.markPublished(
+        bayanNum: state.product.sku,
+        name: state.product.name,
+        platformId: platformId,
+        platformNum: outcome.platformNum ?? state.product.sku,
+        priceMinor: (state.product.salePrice * 100).round(),
+      );
+    }
   }
 
   void _put(PlatformPublishDraft draft, {bool clearError = false}) {

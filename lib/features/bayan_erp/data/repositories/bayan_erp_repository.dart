@@ -19,15 +19,13 @@ class BayanErpRepository {
     DateTime? since,
     int offset = 0,
     int limit = 20,
-  }) =>
-      _datasource.fetchCustomers(since: since, offset: offset, limit: limit);
+  }) => _datasource.fetchCustomers(since: since, offset: offset, limit: limit);
 
   Future<List<ErpProductModel>> getProducts({
     DateTime? since,
     int offset = 0,
     int limit = 20,
-  }) =>
-      _datasource.fetchProducts(since: since, offset: offset, limit: limit);
+  }) => _datasource.fetchProducts(since: since, offset: offset, limit: limit);
 
   Future<List<SalesmanModel>> getSalesmen({DateTime? since}) =>
       _datasource.fetchSalesmen(since: since);
@@ -36,8 +34,7 @@ class BayanErpRepository {
     DateTime? since,
     int number = 1,
     int limit = 20,
-  }) =>
-      _datasource.fetchAgents(since: since, number: number, limit: limit);
+  }) => _datasource.fetchAgents(since: since, number: number, limit: limit);
 
   Future<List<StoreModel>> getStores({DateTime? since}) =>
       _datasource.fetchStores(since: since);

@@ -60,23 +60,25 @@ class _AgentsTable extends StatelessWidget {
           ],
           rows: [
             for (final a in rows)
-              DataRow(cells: [
-                DataCell(Text('${a.id}', style: _monoStyle)),
-                DataCell(_ArabicText(a.name)),
-                DataCell(_PhoneCell(a.phone)),
-                DataCell(
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 180),
-                    child: Text(
-                      a.address.isEmpty ? '—' : a.address,
-                      overflow: TextOverflow.ellipsis,
+              DataRow(
+                cells: [
+                  DataCell(Text('${a.id}', style: _monoStyle)),
+                  DataCell(_ArabicText(a.name)),
+                  DataCell(_PhoneCell(a.phone)),
+                  DataCell(
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 180),
+                      child: Text(
+                        a.address.isEmpty ? '—' : a.address,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                ),
-                DataCell(_GenderBadge(a.gender)),
-                DataCell(_PointsCell(a.totalPoints)),
-                DataCell(_DateCell(a.birthday)),
-              ]),
+                  DataCell(_GenderBadge(a.gender)),
+                  DataCell(_PointsCell(a.totalPoints)),
+                  DataCell(_DateCell(a.birthday)),
+                ],
+              ),
           ],
         ),
       ),
@@ -96,12 +98,12 @@ class _ArabicText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 200),
-        child: Directionality(
-          textDirection: TextDirection.rtl,
-          child: Text(text, overflow: TextOverflow.ellipsis),
-        ),
-      );
+    constraints: const BoxConstraints(maxWidth: 200),
+    child: Directionality(
+      textDirection: TextDirection.rtl,
+      child: Text(text, overflow: TextOverflow.ellipsis),
+    ),
+  );
 }
 
 class _PhoneCell extends StatelessWidget {
@@ -110,7 +112,9 @@ class _PhoneCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (phone.isEmpty) return const Text('—', style: TextStyle(color: AppTheme.textMuted));
+    if (phone.isEmpty) {
+      return const Text('—', style: TextStyle(color: AppTheme.textMuted));
+    }
     return Text(phone, style: const TextStyle(fontSize: 12));
   }
 }
@@ -135,7 +139,11 @@ class _GenderBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 11,
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -147,13 +155,18 @@ class _PointsCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (points == null) return const Text('—', style: TextStyle(color: AppTheme.textMuted));
+    if (points == null) {
+      return const Text('—', style: TextStyle(color: AppTheme.textMuted));
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         const Icon(Icons.star_rounded, size: 13, color: Color(0xFFF59E0B)),
         const SizedBox(width: 3),
-        Text(points!.toStringAsFixed(0), style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          points!.toStringAsFixed(0),
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
@@ -165,7 +178,9 @@ class _DateCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (date == null) return const Text('—', style: TextStyle(color: AppTheme.textMuted));
+    if (date == null) {
+      return const Text('—', style: TextStyle(color: AppTheme.textMuted));
+    }
     return Text(
       '${date!.year}-${date!.month.toString().padLeft(2, '0')}-${date!.day.toString().padLeft(2, '0')}',
       style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),

@@ -7,6 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../data/models/product_model.dart';
 import '../../data/repositories/product_publish_repository.dart';
+import '../cubit/product_registry_cubit.dart';
 import '../cubit/publish_product_cubit.dart';
 import '../cubit/publish_product_state.dart';
 import '../l10n/products_strings.dart';
@@ -31,9 +32,19 @@ class PublishProductPage extends StatelessWidget {
       create: (context) => PublishProductCubit(
         product: product,
         repository: context.read<ProductPublishRepository>(),
+        registry: _registryOf(context),
       ),
       child: _PublishProductView(onClose: onClose),
     );
+  }
+}
+
+/// The registry when the app provides one (tests may not).
+ProductRegistryCubit? _registryOf(BuildContext context) {
+  try {
+    return context.read<ProductRegistryCubit>();
+  } on ProviderNotFoundException {
+    return null;
   }
 }
 

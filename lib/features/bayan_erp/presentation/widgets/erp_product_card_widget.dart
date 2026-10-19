@@ -4,9 +4,14 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/erp_product_model.dart';
 import '../utils/erp_formatters.dart';
 import '../utils/erp_stock_style.dart';
+import 'erp_registration_widgets.dart';
 
 class ErpProductCardWidget extends StatefulWidget {
-  const ErpProductCardWidget({super.key, required this.product, this.onAddToPlatforms});
+  const ErpProductCardWidget({
+    super.key,
+    required this.product,
+    this.onAddToPlatforms,
+  });
 
   final ErpProductModel product;
   final VoidCallback? onAddToPlatforms;
@@ -25,24 +30,28 @@ class _ErpProductCardWidgetState extends State<ErpProductCardWidget> {
   void didUpdateWidget(ErpProductCardWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     final actionToggled =
-        (oldWidget.onAddToPlatforms == null) != (widget.onAddToPlatforms == null);
-    if (oldWidget.product != widget.product || actionToggled) _content = _buildContent();
+        (oldWidget.onAddToPlatforms == null) !=
+        (widget.onAddToPlatforms == null);
+    if (oldWidget.product != widget.product || actionToggled) {
+      _content = _buildContent();
+    }
   }
 
   Widget _buildContent() => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _CardHeader(product: widget.product),
-          Expanded(
-            child: _CardBody(
-              product: widget.product,
-              // Reads the current callback at tap time, since this content is cached.
-              onAddToPlatforms:
-                  widget.onAddToPlatforms == null ? null : () => widget.onAddToPlatforms?.call(),
-            ),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _CardHeader(product: widget.product),
+      Expanded(
+        child: _CardBody(
+          product: widget.product,
+          // Reads the current callback at tap time, since this content is cached.
+          onAddToPlatforms: widget.onAddToPlatforms == null
+              ? null
+              : () => widget.onAddToPlatforms?.call(),
+        ),
+      ),
+    ],
+  );
 
   void _setHovered(bool value) {
     if (_hovered != value) setState(() => _hovered = value);
@@ -62,11 +71,15 @@ class _ErpProductCardWidgetState extends State<ErpProductCardWidget> {
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _hovered ? AppTheme.primary.withValues(alpha: 0.35) : AppTheme.border,
+            color: _hovered
+                ? AppTheme.primary.withValues(alpha: 0.35)
+                : AppTheme.border,
           ),
           boxShadow: [
             BoxShadow(
-              color: _hovered ? const Color(0x1F0F172A) : const Color(0x0A0F172A),
+              color: _hovered
+                  ? const Color(0x1F0F172A)
+                  : const Color(0x0A0F172A),
               blurRadius: _hovered ? 28 : 10,
               offset: Offset(0, _hovered ? 12 : 4),
             ),
@@ -124,7 +137,9 @@ class _CardHeader extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: Text(
                     initial,
@@ -160,7 +175,11 @@ class _CardHeader extends StatelessWidget {
               ],
             ),
           ),
-          Positioned(top: 12, right: 12, child: _StockBadge(level: product.stockLevel)),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: _StockBadge(level: product.stockLevel),
+          ),
         ],
       ),
     );
@@ -174,13 +193,13 @@ class _Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: Color(0x1FFFFFFF),
-        ),
-      );
+    width: size,
+    height: size,
+    decoration: const BoxDecoration(
+      shape: BoxShape.circle,
+      color: Color(0x1FFFFFFF),
+    ),
+  );
 }
 
 class _StockBadge extends StatelessWidget {
@@ -190,23 +209,27 @@ class _StockBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(level.icon, size: 12, color: level.color),
+        const SizedBox(width: 4),
+        Text(
+          level.label,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: level.color,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(level.icon, size: 12, color: level.color),
-            const SizedBox(width: 4),
-            Text(
-              level.label,
-              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: level.color),
-            ),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 // ─── Body ─────────────────────────────────────────────────────────────────────
@@ -246,6 +269,8 @@ class _CardBody extends StatelessWidget {
               style: const TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
             ),
           ],
+          const SizedBox(height: 8),
+          ErpRegistrationBadges(productId: product.id),
           const Spacer(),
           _PriceRow(product: product),
           const SizedBox(height: 12),
@@ -267,19 +292,19 @@ class _AddToPlatformsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 38,
-        child: FilledButton.icon(
-          onPressed: onPressed,
-          icon: const Icon(Icons.add_business_outlined, size: 17),
-          label: const Text('Add to platforms'),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppTheme.primary,
-            foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        ),
-      );
+    height: 38,
+    child: FilledButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.add_business_outlined, size: 17),
+      label: const Text('Add to platforms'),
+      style: FilledButton.styleFrom(
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+  );
 }
 
 class _PriceRow extends StatelessWidget {
@@ -316,7 +341,9 @@ class _PriceRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: price > 0 ? 22 : 15,
                     fontWeight: FontWeight.w800,
-                    color: price > 0 ? AppTheme.textPrimary : AppTheme.textMuted,
+                    color: price > 0
+                        ? AppTheme.textPrimary
+                        : AppTheme.textMuted,
                     height: 1.2,
                   ),
                 ),
@@ -385,7 +412,11 @@ class _PriceTiers extends StatelessWidget {
 }
 
 class _TierCell extends StatelessWidget {
-  const _TierCell({required this.label, required this.value, required this.highlighted});
+  const _TierCell({
+    required this.label,
+    required this.value,
+    required this.highlighted,
+  });
 
   final String label;
   final double value;
@@ -415,7 +446,11 @@ class _TierCell extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               value > 0 ? ErpFormatters.amount(value) : '—',
-              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: color),
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ),
         ),

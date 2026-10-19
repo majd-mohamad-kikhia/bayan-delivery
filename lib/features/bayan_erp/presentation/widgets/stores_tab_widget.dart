@@ -68,7 +68,11 @@ class _StoreCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.border),
         boxShadow: const [
-          BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -81,7 +85,11 @@ class _StoreCard extends StatelessWidget {
               color: AppTheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.warehouse_outlined, color: AppTheme.primary, size: 20),
+            child: const Icon(
+              Icons.warehouse_outlined,
+              color: AppTheme.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -104,7 +112,10 @@ class _StoreCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Store #${store.id}',
-                  style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
               ],
             ),

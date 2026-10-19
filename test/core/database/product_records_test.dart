@@ -266,4 +266,84 @@ void main() {
     final mode = await second.db.rawQuery('PRAGMA journal_mode');
     expect(mode.single.values.single, 'wal');
   });
+
+  test(
+    'saveAllClaiming takes a number the platform just issued from a stale holder',
+    () async {
+      // An older run stored Keeta id 9002 for another product; the platform was
+      // reset since and has now issued 9002 again, to a new product.
+      await repository.save(
+        const ProductRecord(
+          bayanNum: '1',
+          name: 'Old',
+          keetaNum: '9002',
+          hungerNum: 'HS-1',
+        ),
+      );
+
+      await repository.saveAllClaiming(const [
+        ProductRecord(
+          bayanNum: '14',
+          name: 'New',
+          keetaNum: '9002',
+          hungerNum: '14',
+        ),
+      ]);
+
+      expect((await repository.byBayanNum('14'))?.keetaNum, '9002');
+      final old = await repository.byBayanNum('1');
+      expect(old?.keetaNum, isNull, reason: 'stale claim released');
+      expect(old?.hungerNum, 'HS-1', reason: 'its other numbers stay');
+    },
+  );
+
+  test('a plain save still refuses a number held by another product', () async {
+    await repository.save(
+      const ProductRecord(bayanNum: '1', name: 'A', keetaNum: '9002'),
+    );
+    expect(
+      () => repository.save(
+        const ProductRecord(bayanNum: '2', name: 'B', keetaNum: '9002'),
+      ),
+      throwsA(isA<DatabaseException>()),
+    );
+  });
+
+  test(
+    'clearUnlisted forgets a platform number the platform no longer lists',
+    () async {
+      await repository.saveAll(const [
+        ProductRecord(
+          bayanNum: '1',
+          name: 'Kept',
+          keetaNum: '9001',
+          hungerNum: 'HS-1',
+        ),
+        ProductRecord(
+          bayanNum: '2',
+          name: 'Gone from Keeta',
+          keetaNum: '9002',
+          hungerNum: 'HS-2',
+        ),
+        ProductRecord(bayanNum: '3', name: 'Never on Keeta', hungerNum: 'HS-3'),
+      ]);
+
+      final cleared = await repository.clearUnlisted('keeta', {'1'});
+
+      expect(cleared, 1);
+      expect((await repository.byBayanNum('1'))?.keetaNum, '9001');
+      final gone = await repository.byBayanNum('2');
+      expect(gone?.keetaNum, isNull);
+      expect(
+        gone?.hungerNum,
+        'HS-2',
+        reason: 'the other platform is untouched',
+      );
+      expect(
+        await repository.clearUnlisted('keeta', {'1'}),
+        0,
+        reason: 'nothing left to clear',
+      );
+    },
+  );
 }

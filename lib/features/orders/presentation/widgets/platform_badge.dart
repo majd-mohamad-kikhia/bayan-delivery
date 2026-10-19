@@ -14,12 +14,18 @@ class PlatformBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         context.commonStrings.platformName(platform),
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

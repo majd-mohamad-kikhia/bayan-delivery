@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/localization/locale_context.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/platform_colors.dart';
+import '../l10n/orders_strings.dart';
 
 /// Pill-style platform selector — one chip per platform, no TabBar dependency.
 class PlatformTabs extends StatelessWidget {
@@ -15,17 +16,21 @@ class PlatformTabs extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
 
+  static const List<String> _tabs = ['all', ...PlatformColors.all];
+
   @override
   Widget build(BuildContext context) {
     final common = context.commonStrings;
     return Row(
       children: [
-        for (final platform in PlatformColors.all)
+        for (final platform in _tabs)
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 8),
             child: _PlatformPill(
               platform: platform,
-              label: common.platformName(platform),
+              label: platform == 'all'
+                  ? context.ordersStrings.allPlatforms
+                  : common.platformName(platform),
               isSelected: selected == platform,
               onTap: () => onChanged(platform),
             ),
@@ -59,9 +64,7 @@ class _PlatformPill extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isSelected ? color : AppTheme.border,
-          ),
+          border: Border.all(color: isSelected ? color : AppTheme.border),
         ),
         child: Text(
           label,

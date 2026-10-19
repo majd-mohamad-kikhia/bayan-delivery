@@ -1,7 +1,7 @@
 /// App-wide constants. Override at build/run time with --dart-define.
 ///
 /// ```bash
-/// flutter run -d macos --dart-define=API_BASE_URL=http://10.100.116.218:3001
+/// flutter run -d macos --dart-define=API_BASE_URL=http://localhost:3001
 /// ```
 class AppConstants {
   const AppConstants._();
@@ -45,12 +45,11 @@ class AppConstants {
   /// flutter run -d windows --dart-define=BAYAN_ERP_BASE_URL=http://192.168.1.5:3003
   /// ```
   ///
-  /// The default is `127.0.0.1`, not `localhost`: the Bayan API listens on IPv4
-  /// only, and on Windows `localhost` tries IPv6 (`::1`) first, which costs
-  /// ~2 s per new connection before falling back.
+  /// The default is the Bayan server's LAN IP, not `localhost` (on Windows
+  /// `localhost` tries IPv6 first, which costs ~2 s per new connection).
   static const String bayanErpBaseUrl = String.fromEnvironment(
     'BAYAN_ERP_BASE_URL',
-    defaultValue: 'http://127.0.0.1:3003',
+    defaultValue: 'http://10.142.36.218:3003',
   );
 
   /// A reachable local server connects in milliseconds, so fail fast here.
@@ -60,4 +59,7 @@ class AppConstants {
   /// while it opens the accounting database.
   static const Duration erpReceiveTimeout = Duration(seconds: 30);
   static const int erpPageSize = 20;
+
+  /// How often the ERP products are re-synced in the background.
+  static const Duration erpSyncInterval = Duration(minutes: 3);
 }

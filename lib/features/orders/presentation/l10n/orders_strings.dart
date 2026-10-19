@@ -25,6 +25,23 @@ abstract class OrdersStrings {
   // ── Board ──────────────────────────────────────────────────────────────
   String get loadingOrders;
   String get noOrders;
+  String get allPlatforms;
+  String get sidebarCollapse;
+  String get sidebarExpand;
+  String get columnPreparing;
+  String get columnEndProcess;
+  String get columnAttention;
+
+  /// Titles of the merged columns on the "All" board.
+  String columnTitle(String key) => switch (key) {
+    'preparing' => columnPreparing,
+    'endProcess' => columnEndProcess,
+    'attention' => columnAttention,
+    _ => key,
+  };
+  String get newOrderTitle;
+  String newOrdersCount(int n);
+  String get newOrderDismiss;
   String get noArchivedOrders;
   String get actionFailed;
 
@@ -40,6 +57,16 @@ abstract class OrdersStrings {
   String get phone;
   String get items;
   String get unknownItem;
+  String get dateFilterTitle;
+  String get dateToday;
+  String get dateYesterday;
+  String get dateLast7Days;
+  String get dateThisMonth;
+  String get dateAll;
+  String get dateCustom;
+  String get dateCustomHelp;
+  String get addOns;
+  String get itemSubtotal;
   String eachPrice(String price);
   String get payment;
   String get total;
@@ -55,10 +82,10 @@ abstract class OrdersStrings {
   String get logisticsDelivery;
 
   String transportTypeLabel(String type) => switch (type) {
-        'VENDOR_DELIVERY' => vendorDelivery,
-        'LOGISTICS_DELIVERY' => logisticsDelivery,
-        _ => type,
-      };
+    'VENDOR_DELIVERY' => vendorDelivery,
+    'LOGISTICS_DELIVERY' => logisticsDelivery,
+    _ => type,
+  };
 
   // ── Cancel / reject dialog ─────────────────────────────────────────────
   String get cancelOrderTitle;
@@ -83,16 +110,59 @@ abstract class OrdersStrings {
   String get actionCancel;
   String get actionAgreeRefund;
   String get actionRejectRefund;
+  String get menus;
+  String get reports;
+  String get actionSelfDispatch;
+  String get actionSelfDeliver;
+  String get actionCourier;
+  String get actionPartialRefund;
+  String get selfDeliveryBadge;
+  String get courierDialogTitle;
+  String get courierDispatchSubtitle;
+  String get courierDeliverSubtitle;
+  String get courierUpdateSubtitle;
+  String get courierName;
+  String get courierPhone;
+  String get courierPlate;
+  String get courierVehicle;
+  String get vehicleWalking;
+  String get vehicleBicycle;
+  String get vehicleMotorcycle;
+  String get vehicleCar;
+  String get courierConfirmDispatch;
+  String get courierConfirmDeliver;
+  String get courierConfirmUpdate;
+  String get courierNeedsOne;
+  String get refundTitle;
+  String get refundSubtitle;
+  String get refundLoading;
+  String get refundNothing;
+  String get refundAlready;
+  String get refundReason;
+  String get refundReasonOther;
+  String get refundReasonSlow;
+  String get refundReasonIngredients;
+  String get refundReasonMissing;
+  String get refundReasonWrong;
+  String get refundDescribe;
+  String get refundTotal;
+  String get refundApply;
 
   String actionLabel(String action, {required String platform}) =>
       switch (action) {
         'accept' => platform == 'keeta' ? actionConfirm : actionAccept,
         'ready' => actionReady,
-        'collect' => actionHandoff,
+        // One "leaves the restaurant" button on the merged board: Keeta's
+        // hand-over and HungerStation's dispatch are the same step to staff.
+        'collect' => platform == 'all' ? actionDispatch : actionHandoff,
         'dispatch' => actionDispatch,
         'cancel' => actionCancel,
         'agree' => actionAgreeRefund,
         'reject' => actionRejectRefund,
+        'selfDispatch' => actionSelfDispatch,
+        'selfDeliver' => actionSelfDeliver,
+        'courier' => actionCourier,
+        'partialRefund' => actionPartialRefund,
         _ => action,
       };
 
@@ -116,7 +186,8 @@ abstract class OrdersStrings {
       switch (status) {
         'NEW_ORDER' => platform == 'keeta' ? statusCreated : statusNew,
         'CREATED' => statusCreated,
-        'ORDER_ACCEPTED' => platform == 'keeta' ? statusConfirmed : statusAccepted,
+        'ORDER_ACCEPTED' =>
+          platform == 'keeta' ? statusConfirmed : statusAccepted,
         'CONFIRMED' => statusConfirmed,
         'ORDER_READY' || 'READY_FOR_PICKUP' => statusReadyForPickup,
         'ORDER_PICKED_UP' || 'PICKED_UP' => statusPickedUp,

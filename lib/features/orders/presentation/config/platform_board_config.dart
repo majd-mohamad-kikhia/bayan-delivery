@@ -7,10 +7,21 @@ class BoardColumn {
   const BoardColumn({
     required this.status,
     required this.color,
+    this.alsoStatuses = const {},
+    this.titleKey,
   });
 
   final String status;
   final Color color;
+
+  /// Further statuses shown in this column (the merged "All" board).
+  final Set<String> alsoStatuses;
+
+  /// Set on merged columns: title comes from `OrdersStrings.columnTitle`
+  /// instead of the status label.
+  final String? titleKey;
+
+  bool holds(String s) => s == status || alsoStatuses.contains(s);
 }
 
 /// Board layout + status colors for a single delivery platform.
@@ -34,7 +45,7 @@ class PlatformBoardConfig {
 
   Color colorFor(String status) {
     for (final column in activeColumns) {
-      if (column.status == status) return column.color;
+      if (column.holds(status)) return column.color;
     }
     return statusColors[status] ?? const Color(0xFF475569);
   }
@@ -84,8 +95,44 @@ abstract final class PlatformBoards {
     },
   );
 
+  /// Every platform on one board. Statuses that mean the same thing to the
+  /// staff share a column, so there are 5 instead of up to 8:
+  /// New → Preparing → End process (ready / picked up / out for delivery),
+  /// plus Needs attention (refund / cancellation requests) and Cancelled.
+  static const all = PlatformBoardConfig(
+    platformId: 'all',
+    activeColumns: [
+      BoardColumn(status: 'NEW_ORDER', color: Color(0xFF3D5AFE)),
+      BoardColumn(
+        status: 'ORDER_ACCEPTED',
+        color: Color(0xFF7C4DFF),
+        titleKey: 'preparing',
+      ),
+      BoardColumn(
+        status: 'ORDER_READY',
+        alsoStatuses: {'ORDER_PICKED_UP', 'ORDER_DISPATCHED'},
+        color: Color(0xFFFB8C00),
+        titleKey: 'endProcess',
+      ),
+      BoardColumn(
+        status: 'REFUND_REQUESTED',
+        alsoStatuses: {'CANCELLATION_REQUESTED'},
+        color: Color(0xFFF59E0B),
+        titleKey: 'attention',
+      ),
+      BoardColumn(status: 'ORDER_CANCELLED', color: Color(0xFFFF6B6B)),
+    ],
+    terminalStatuses: {'ORDER_DELIVERED', 'ORDER_COMPLETED'},
+    statusColors: {
+      'ORDER_DELIVERED': Color(0xFF22C55E),
+      'ORDER_COMPLETED': Color(0xFF22C55E),
+    },
+  );
+
   static PlatformBoardConfig of(String platform) {
     switch (platform) {
+      case 'all':
+        return all;
       case 'hungerstation':
         return hungerstation;
       case 'keeta':

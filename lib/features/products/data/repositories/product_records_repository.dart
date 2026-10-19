@@ -39,6 +39,63 @@ ON CONFLICT(bayan_num) DO UPDATE SET
     await batch.commit(noResult: true);
   }
 
+  /// Like [saveAll], for numbers a platform has just issued: if another
+  /// product still holds one of them, it is taken from that product first.
+  /// Platforms never reuse an id, so the older holder is stale (its product
+  /// was deleted there, or the platform was reset) and keeping it would only
+  /// make the save fail on the unique index.
+  Future<void> saveAllClaiming(Iterable<ProductRecord> records) async {
+    await _db.transaction((txn) async {
+      for (final record in records) {
+        final bayanNum = record.bayanNum.trim();
+        for (final (column, number) in [
+          ('keeta_num', record.keetaNum),
+          ('hunger_num', record.hungerNum),
+          ('careem_num', record.careemNum),
+        ]) {
+          final value = _clean(number);
+          if (value == null) continue;
+          await txn.rawUpdate(
+            'UPDATE products SET $column = NULL WHERE $column = ? AND bayan_num != ?',
+            [value, bayanNum],
+          );
+        }
+      }
+      final batch = txn.batch();
+      for (final record in records) {
+        batch.rawInsert(_upsertSql, _upsertArgs(record));
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  /// Forgets [platformId]'s number on every product whose Al-Bayan number is
+  /// not in [stillListed] — the platform no longer has it (deleted there, or
+  /// the platform was reset). Returns how many products were cleared.
+  Future<int> clearUnlisted(String platformId, Set<String> stillListed) async {
+    final column = _column(platformId);
+    final rows = await _db.query(
+      'products',
+      columns: ['bayan_num'],
+      where: '$column IS NOT NULL',
+    );
+    final stale = [
+      for (final row in rows)
+        if (!stillListed.contains(row['bayan_num']! as String))
+          row['bayan_num']! as String,
+    ];
+    if (stale.isEmpty) return 0;
+    final batch = _db.batch();
+    for (final bayanNum in stale) {
+      batch.rawUpdate(
+        'UPDATE products SET $column = NULL WHERE bayan_num = ?',
+        [bayanNum],
+      );
+    }
+    await batch.commit(noResult: true);
+    return stale.length;
+  }
+
   /// Sets (or, with null, clears) the number on [platformId] — `keeta`,
   /// `hungerstation` or `careem`. Returns false when there is no product
   /// with [bayanNum] (nothing is created: a product needs a name).
@@ -103,6 +160,16 @@ ON CONFLICT(bayan_num) DO UPDATE SET
       offset: offset,
     );
     return [for (final row in rows) ProductRecord.fromRow(row)];
+  }
+
+  /// Every product, keyed by Al-Bayan number — one query, for the in-memory
+  /// registry that the product list reads on every row.
+  Future<Map<String, ProductRecord>> all() async {
+    final rows = await _db.query('products');
+    return {
+      for (final row in rows)
+        row['bayan_num']! as String: ProductRecord.fromRow(row),
+    };
   }
 
   Future<int> count() async {

@@ -24,6 +24,9 @@ class ManualRepository implements ProductPublishRepository {
   Future<List<String>> categoryNames(String platformId) async => const [];
 
   @override
+  Future<List<CatalogEntry>> catalog(String platformId) async => const [];
+
+  @override
   Future<PublishOutcome> publish(
     ListingContent content,
     PlatformListing listing,

@@ -31,20 +31,38 @@ final class OrdersStringsAr extends OrdersStrings {
   @override
   String get noOrders => 'لا توجد طلبات';
   @override
+  String get allPlatforms => 'الكل';
+  @override
+  String get sidebarCollapse => 'طي القائمة';
+  @override
+  String get sidebarExpand => 'توسيع القائمة';
+  @override
+  String get columnPreparing => 'قيد التحضير';
+  @override
+  String get columnEndProcess => 'إنهاء الطلب';
+  @override
+  String get columnAttention => 'تحتاج إجراء';
+  @override
+  String get newOrderTitle => 'طلب جديد!';
+  @override
+  String newOrdersCount(int n) => '$n طلبات جديدة!';
+  @override
+  String get newOrderDismiss => 'حسناً، تم';
+  @override
   String get noArchivedOrders => 'لا توجد طلبات مؤرشفة بعد';
   @override
   String get actionFailed => 'تعذّر تحديث الطلب';
 
   @override
   String itemCount(int n) => arabicPlural(
-        n,
-        zero: 'لا أصناف',
-        one: 'صنف واحد',
-        two: 'صنفان',
-        few: '$n أصناف',
-        many: '$n صنفًا',
-        other: '$n صنف',
-      );
+    n,
+    zero: 'لا أصناف',
+    one: 'صنف واحد',
+    two: 'صنفان',
+    few: '$n أصناف',
+    many: '$n صنفًا',
+    other: '$n صنف',
+  );
   @override
   String reason(String reason) => 'السبب: $reason';
 
@@ -62,6 +80,36 @@ final class OrdersStringsAr extends OrdersStrings {
   String get items => 'الأصناف';
   @override
   String get unknownItem => 'صنف غير معروف';
+
+  @override
+  String get dateFilterTitle => 'عرض طلبات';
+
+  @override
+  String get dateToday => 'اليوم';
+
+  @override
+  String get dateYesterday => 'أمس';
+
+  @override
+  String get dateLast7Days => 'آخر 7 أيام';
+
+  @override
+  String get dateThisMonth => 'هذا الشهر';
+
+  @override
+  String get dateAll => 'كل الأوقات';
+
+  @override
+  String get dateCustom => 'فترة مخصصة';
+
+  @override
+  String get dateCustomHelp => 'اختر أول يوم وآخر يوم';
+
+  @override
+  String get addOns => 'الإضافات';
+
+  @override
+  String get itemSubtotal => 'الصنف';
   @override
   String eachPrice(String price) => '$price للوحدة';
   @override
@@ -125,6 +173,117 @@ final class OrdersStringsAr extends OrdersStrings {
   String get actionAgreeRefund => 'قبول الاسترداد';
   @override
   String get actionRejectRefund => 'رفض الاسترداد';
+
+  @override
+  String get menus => 'القوائم';
+
+  @override
+  String get reports => 'التقارير';
+
+  @override
+  String get actionSelfDispatch => 'توصيلنا';
+
+  @override
+  String get actionSelfDeliver => 'تم التسليم';
+
+  @override
+  String get actionCourier => 'السائق';
+
+  @override
+  String get actionPartialRefund => 'استرداد جزئي';
+
+  @override
+  String get selfDeliveryBadge => 'توصيلنا';
+
+  @override
+  String get courierDialogTitle => 'بيانات السائق';
+
+  @override
+  String get courierDispatchSubtitle => 'من سيوصّل هذا الطلب؟';
+
+  @override
+  String get courierDeliverSubtitle => 'أكّد وصول الطلب للزبون';
+
+  @override
+  String get courierUpdateSubtitle => 'حدّث السائق الظاهر للزبون';
+
+  @override
+  String get courierName => 'اسم السائق';
+
+  @override
+  String get courierPhone => 'الهاتف';
+
+  @override
+  String get courierPlate => 'رقم اللوحة';
+
+  @override
+  String get courierVehicle => 'المركبة';
+
+  @override
+  String get vehicleWalking => 'مشياً';
+
+  @override
+  String get vehicleBicycle => 'دراجة';
+
+  @override
+  String get vehicleMotorcycle => 'دراجة نارية';
+
+  @override
+  String get vehicleCar => 'سيارة';
+
+  @override
+  String get courierConfirmDispatch => 'خرج للتوصيل';
+
+  @override
+  String get courierConfirmDeliver => 'تم التسليم';
+
+  @override
+  String get courierConfirmUpdate => 'حفظ السائق';
+
+  @override
+  String get courierNeedsOne => 'املأ حقلاً واحداً على الأقل';
+
+  @override
+  String get refundTitle => 'استرداد جزئي';
+
+  @override
+  String get refundSubtitle => 'أرجع ثمن الأصناف التي فيها مشكلة فقط';
+
+  @override
+  String get refundLoading => 'جارٍ فحص ما يمكن إرجاعه…';
+
+  @override
+  String get refundNothing => 'لا يوجد ما يمكن إرجاعه في هذا الطلب';
+
+  @override
+  String get refundAlready => 'تم إرجاعه';
+
+  @override
+  String get refundReason => 'السبب';
+
+  @override
+  String get refundReasonOther => 'سبب آخر';
+
+  @override
+  String get refundReasonSlow => 'بطء التحضير';
+
+  @override
+  String get refundReasonIngredients => 'نقص المكونات';
+
+  @override
+  String get refundReasonMissing => 'نقص أو عدم اكتمال التوصيل';
+
+  @override
+  String get refundReasonWrong => 'صنف خاطئ';
+
+  @override
+  String get refundDescribe => 'اكتب السبب';
+
+  @override
+  String get refundTotal => 'إجمالي الاسترداد';
+
+  @override
+  String get refundApply => 'إرجاع المبلغ';
 
   @override
   String get statusNew => 'جديد';

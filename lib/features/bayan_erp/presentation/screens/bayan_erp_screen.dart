@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/erp_product_model.dart';
 import '../bloc/bayan_erp_bloc.dart';
@@ -8,6 +11,7 @@ import '../bloc/bayan_erp_event.dart';
 import '../bloc/bayan_erp_state.dart';
 import '../widgets/agents_tab_widget.dart';
 import '../widgets/customers_tab_widget.dart';
+import '../widgets/platform_sync_chip.dart';
 import '../widgets/erp_products_tab_widget.dart';
 import '../widgets/salesman_tab_widget.dart';
 import '../widgets/stores_tab_widget.dart';
@@ -53,7 +57,11 @@ class _ErpHeader extends StatelessWidget {
       child: Row(
         children: [
           // ── Title
-          const Icon(Icons.account_balance_outlined, size: 20, color: AppTheme.primary),
+          const Icon(
+            Icons.account_balance_outlined,
+            size: 20,
+            color: AppTheme.primary,
+          ),
           const SizedBox(width: 10),
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -73,12 +81,114 @@ class _ErpHeader extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
-          // ── Date filter
-          const _DateFilterButton(),
-          const SizedBox(width: 8),
-          // ── Refresh
-          const _RefreshButton(),
+          // Everything after the title hugs the right edge; sync status is last.
+          const Expanded(
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: _HeaderActions(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderActions extends StatelessWidget {
+  const _HeaderActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PlatformSyncChip(),
+        SizedBox(width: 8),
+        _DateFilterButton(),
+        SizedBox(width: 8),
+        _RefreshButton(),
+        SizedBox(width: 12),
+        Flexible(child: _SyncStatus()),
+      ],
+    );
+  }
+}
+
+// ─── Sync status ──────────────────────────────────────────────────────────────
+
+/// "Synced 2m 05s ago", ticking every second; the bloc re-syncs every 3 min.
+class _SyncStatus extends StatefulWidget {
+  const _SyncStatus();
+
+  @override
+  State<_SyncStatus> createState() => _SyncStatusState();
+}
+
+class _SyncStatusState extends State<_SyncStatus> {
+  late final Timer _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker.cancel();
+    super.dispose();
+  }
+
+  static String _ago(Duration d) {
+    if (d.inSeconds < 60) return '${d.inSeconds}s';
+    if (d.inMinutes < 60) {
+      return '${d.inMinutes}m ${(d.inSeconds % 60).toString().padLeft(2, '0')}s';
+    }
+    if (d.inHours < 24) return '${d.inHours}h ${d.inMinutes % 60}m';
+    return '${d.inDays}d';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final last = context.select((BayanErpBloc b) => b.state.productsLastSyncAt);
+    final loading =
+        context.select((BayanErpBloc b) => b.state.productsStatus) ==
+        BayanErpStatus.loading;
+    final nextIn = last == null
+        ? null
+        : AppConstants.erpSyncInterval - DateTime.now().difference(last);
+    final text = last == null
+        ? 'Not synced yet'
+        : 'Products synced ${_ago(DateTime.now().difference(last))} ago';
+    return Tooltip(
+      message: last == null
+          ? 'Products sync every ${AppConstants.erpSyncInterval.inMinutes} min'
+          : 'Last sync: $last\nNext in ${_ago(nextIn! < Duration.zero ? Duration.zero : nextIn)}',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          loading
+              ? const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(
+                  Icons.sync_rounded,
+                  size: 14,
+                  color: AppTheme.textMuted,
+                ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+            ),
+          ),
         ],
       ),
     );
@@ -119,7 +229,9 @@ class _DateFilterButton extends StatelessWidget {
               color: hasFilter ? AppTheme.primary : AppTheme.border,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         );
       },
@@ -136,7 +248,9 @@ class _DateFilterButton extends StatelessWidget {
       helpText: 'Filter records modified since',
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: AppTheme.primary),
+          colorScheme: Theme.of(
+            ctx,
+          ).colorScheme.copyWith(primary: AppTheme.primary),
         ),
         child: child!,
       ),
@@ -167,7 +281,9 @@ class _RefreshButton extends StatelessWidget {
           tooltip: 'Refresh',
           onPressed: isLoading
               ? null
-              : () => context.read<BayanErpBloc>().add(const BayanErpRefreshRequested()),
+              : () => context.read<BayanErpBloc>().add(
+                  const BayanErpRefreshRequested(),
+                ),
           icon: AnimatedRotation(
             turns: isLoading ? 1 : 0,
             duration: const Duration(milliseconds: 600),
@@ -211,7 +327,8 @@ class _ErpTabBar extends StatelessWidget {
                 icon: icon,
                 label: label,
                 isActive: activeTab == tab,
-                onTap: () => context.read<BayanErpBloc>().add(BayanErpTabSelected(tab)),
+                onTap: () =>
+                    context.read<BayanErpBloc>().add(BayanErpTabSelected(tab)),
               ),
           ],
         ),
@@ -287,7 +404,9 @@ class _ErpBody extends StatelessWidget {
       selector: (s) => s.activeTab,
       builder: (context, activeTab) => switch (activeTab) {
         BayanErpTab.customers => const CustomersTabWidget(),
-        BayanErpTab.products => ErpProductsTabWidget(onAddToPlatforms: onAddToPlatforms),
+        BayanErpTab.products => ErpProductsTabWidget(
+          onAddToPlatforms: onAddToPlatforms,
+        ),
         BayanErpTab.salesmen => const SalesmanTabWidget(),
         BayanErpTab.agents => const AgentsTabWidget(),
         BayanErpTab.stores => const StoresTabWidget(),
@@ -344,7 +463,9 @@ class _ErpPaginationBar extends StatelessWidget {
                 icon: Icons.chevron_left,
                 tooltip: 'Previous page',
                 onPressed: state.canGoPrev && !isLoading
-                    ? () => context.read<BayanErpBloc>().add(const BayanErpPrevPageRequested())
+                    ? () => context.read<BayanErpBloc>().add(
+                        const BayanErpPrevPageRequested(),
+                      )
                     : null,
               ),
               const SizedBox(width: 4),
@@ -353,7 +474,9 @@ class _ErpPaginationBar extends StatelessWidget {
                 icon: Icons.chevron_right,
                 tooltip: 'Next page',
                 onPressed: state.canGoNext && !isLoading
-                    ? () => context.read<BayanErpBloc>().add(const BayanErpNextPageRequested())
+                    ? () => context.read<BayanErpBloc>().add(
+                        const BayanErpNextPageRequested(),
+                      )
                     : null,
               ),
             ],

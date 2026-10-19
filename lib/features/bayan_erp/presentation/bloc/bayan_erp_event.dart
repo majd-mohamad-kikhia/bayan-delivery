@@ -68,6 +68,12 @@ final class BayanErpProductsPageSizeChanged extends BayanErpEvent {
   List<Object?> get props => [pageSize];
 }
 
+/// Background re-fetch of the current products page (timer-driven). Unlike a
+/// refresh it keeps the list on screen and ignores failures.
+final class BayanErpProductsSyncRequested extends BayanErpEvent {
+  const BayanErpProductsSyncRequested();
+}
+
 /// Filters the loaded products page by name, short name, or ID.
 final class BayanErpProductsSearchChanged extends BayanErpEvent {
   const BayanErpProductsSearchChanged(this.query);

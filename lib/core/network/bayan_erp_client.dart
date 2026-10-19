@@ -5,7 +5,7 @@ import 'api_exception.dart';
 
 /// Dedicated Dio client for the Bayan Accounting & Warehouses local ERP API.
 ///
-/// Targets [AppConstants.bayanErpBaseUrl] (default: `http://127.0.0.1:3003`).
+/// Targets [AppConstants.bayanErpBaseUrl] (default: `http://10.91.179.218:3003`).
 /// All endpoints return either a JSON array or a single JSON object; both are
 /// normalised to `List<Map<String, dynamic>>` by [getList].
 class BayanErpClient {
@@ -51,6 +51,19 @@ class BayanErpClient {
           throw ApiException.fromDioException(e);
         }
       }
+    }
+  }
+
+  /// Sends [body] as JSON and returns the decoded response.
+  ///
+  /// Never repeated: a request that reached the server but lost its answer
+  /// would create a second record if it were sent again.
+  Future<Object?> post(String path, Object body) async {
+    try {
+      final response = await _dio.post<Object?>(path, data: body);
+      return response.data;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
     }
   }
 

@@ -34,20 +34,20 @@ final class AgentModel extends Equatable {
   final int gender;
 
   String get genderLabel => switch (gender) {
-        1 => 'Male',
-        2 => 'Female',
-        _ => '—',
-      };
+    1 => 'Male',
+    2 => 'Female',
+    _ => '—',
+  };
 
   factory AgentModel.fromJson(Map<String, dynamic> json) => AgentModel(
-        id: (json['ID'] as num).toInt(),
-        name: (json['Name'] as String? ?? '').trim(),
-        phone: json['phone'] as String? ?? '',
-        address: json['address'] as String? ?? '',
-        birthday: _parseDate(json['birthday'] as String?),
-        totalPoints: (json['totalpoint'] as num?)?.toDouble(),
-        gender: (json['gender'] as num? ?? 0).toInt(),
-      );
+    id: (json['ID'] as num).toInt(),
+    name: (json['Name'] as String? ?? '').trim(),
+    phone: json['phone'] as String? ?? '',
+    address: json['address'] as String? ?? '',
+    birthday: _parseDate(json['birthday'] as String?),
+    totalPoints: (json['totalpoint'] as num?)?.toDouble(),
+    gender: (json['gender'] as num? ?? 0).toInt(),
+  );
 
   static DateTime? _parseDate(String? raw) {
     if (raw == null) return null;
@@ -58,5 +58,13 @@ final class AgentModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, phone, address, birthday, totalPoints, gender];
+  List<Object?> get props => [
+    id,
+    name,
+    phone,
+    address,
+    birthday,
+    totalPoints,
+    gender,
+  ];
 }

@@ -14,7 +14,10 @@ import '../bloc/orders_state.dart';
 import '../config/platform_board_config.dart';
 import '../l10n/orders_strings.dart';
 import '../widgets/board_header.dart';
+import '../utils/order_drag_rules.dart';
 import '../widgets/kanban_column.dart';
+import '../widgets/order_action_runner.dart';
+import '../widgets/new_order_dialog.dart';
 import '../widgets/order_card.dart';
 
 class OrdersPage extends StatelessWidget {
@@ -34,7 +37,23 @@ class _MainContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<OrdersBloc, OrdersState>(
-      listenWhen: (p, c) => c.actionError != null && p.actionError != c.actionError,
+      listenWhen: (p, c) =>
+          c.newOrderAlerts.isNotEmpty &&
+          p.newOrderAlerts.length != c.newOrderAlerts.length,
+      listener: (context, state) => _showNewOrderDialog(context),
+      child: const _ErrorListener(),
+    );
+  }
+}
+
+class _ErrorListener extends StatelessWidget {
+  const _ErrorListener();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<OrdersBloc, OrdersState>(
+      listenWhen: (p, c) =>
+          c.actionError != null && p.actionError != c.actionError,
       listener: (context, state) {
         AppSnackBar.fromError(
           context,
@@ -97,27 +116,27 @@ class _BoardBody extends StatelessWidget {
       buildWhen: (p, c) =>
           p.status != c.status ||
           p.showHistory != c.showHistory ||
+          p.dateFilter != c.dateFilter ||
+          p.isDateLoading != c.isDateLoading ||
           p.orders != c.orders,
       builder: (context, state) {
         if (state.status == OrdersStatus.initial ||
-            state.status == OrdersStatus.loading) {
+            state.status == OrdersStatus.loading ||
+            state.isDateLoading) {
           return LoadingView(message: s.loadingOrders);
         }
 
         if (state.status == OrdersStatus.failure && state.orders.isEmpty) {
           return ErrorView(
             error: state.error ?? const AppError(AppErrorKind.unknown),
-            onRetry: () => context.read<OrdersBloc>().add(const OrdersRequested()),
+            onRetry: () =>
+                context.read<OrdersBloc>().add(const OrdersRequested()),
           );
         }
 
         return state.showHistory
             ? _HistoryGrid(orders: state.visibleOrders)
-            : _ActiveBoard(
-                board: state.board,
-                orders: state.visibleOrders,
-                isActionPending: state.isActionPending,
-              );
+            : _ActiveBoard(board: state.board, orders: state.visibleOrders);
       },
     );
   }
@@ -125,45 +144,134 @@ class _BoardBody extends StatelessWidget {
 
 // ── Active kanban board ────────────────────────────────────────────────────────
 
-class _ActiveBoard extends StatelessWidget {
-  const _ActiveBoard({
-    required this.board,
-    required this.orders,
-    required this.isActionPending,
-  });
+class _ActiveBoard extends StatefulWidget {
+  const _ActiveBoard({required this.board, required this.orders});
 
   final PlatformBoardConfig board;
   final List<OrderModel> orders;
-  final bool Function(String platform, String platformOrderId) isActionPending;
+
+  @override
+  State<_ActiveBoard> createState() => _ActiveBoardState();
+}
+
+class _ActiveBoardState extends State<_ActiveBoard> {
+  static const double _minColumnWidth = 270;
+  static const double _maxColumnWidth = 340;
+  static const double _gutter = 12;
+  static const double _padding = 16;
+
+  /// The card being dragged; every column reads it to show if it takes the drop.
+  final ValueNotifier<OrderModel?> _dragging = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _dragging.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_ActiveBoard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A poll can move or remove the card being dragged; its Draggable is then
+    // gone and never reports the end, which would leave every column lit.
+    final dragged = _dragging.value;
+    if (dragged != null &&
+        !widget.orders.any(
+          (o) =>
+              o.platform == dragged.platform &&
+              o.platformOrderId == dragged.platformOrderId &&
+              o.status == dragged.status,
+        )) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _dragging.value = null;
+      });
+    }
+  }
+
+  PlatformBoardConfig get board => widget.board;
+  List<OrderModel> get orders => widget.orders;
 
   @override
   Widget build(BuildContext context) {
     final s = context.ordersStrings;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final column in board.activeColumns)
-            KanbanColumn(
-              title: s.statusLabel(column.status, platform: board.platformId),
-              accentColor: column.color,
-              orders: orders.where((o) => o.status == column.status).toList(),
-              isActionPending: (order) =>
-                  isActionPending(order.platform, order.platformOrderId),
-              onAction: (order, action, {reason}) =>
-                  context.read<OrdersBloc>().add(
-                        OrderActionRequested(
-                          platform: order.platform,
-                          platformOrderId: order.platformOrderId,
-                          action: action,
-                          reason: reason,
-                        ),
-                      ),
-            ),
-        ],
+    final columns = board.activeColumns;
+
+    // One pass over the orders instead of one filter per column.
+    final buckets = List.generate(columns.length, (_) => <OrderModel>[]);
+    for (final order in orders) {
+      for (var i = 0; i < columns.length; i++) {
+        if (columns[i].holds(order.status)) {
+          buckets[i].add(order);
+          break;
+        }
+      }
+    }
+
+    final bloc = context.read<OrdersBloc>();
+    void onAction(
+      OrderModel order,
+      String action, {
+      String? reason,
+      Map<String, Object?>? payload,
+    }) => bloc.add(
+      OrderActionRequested(
+        platform: order.platform,
+        platformOrderId: order.platformOrderId,
+        action: action,
+        reason: reason,
+        payload: payload,
       ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Fill the screen when it's wide enough, scroll sideways when not.
+        final fit =
+            (constraints.maxWidth - _padding * 2) / columns.length - _gutter;
+        final width = fit.clamp(_minColumnWidth, _maxColumnWidth);
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.all(_padding),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < columns.length; i++)
+                KanbanColumn(
+                  key: ValueKey(columns[i].status),
+                  width: width,
+                  title: columns[i].titleKey != null
+                      ? s.columnTitle(columns[i].titleKey!)
+                      : s.statusLabel(
+                          columns[i].status,
+                          platform: board.platformId,
+                        ),
+                  status: columns[i].status,
+                  accentColor: columns[i].color,
+                  orders: buckets[i],
+                  neutralLabels: board.platformId == 'all',
+                  // The first column of every board is the new, unaccepted orders.
+                  alerting: i == 0 && buckets[0].isNotEmpty,
+                  onAction: onAction,
+                  dragging: _dragging,
+                  dropActionFor: (order) =>
+                      dragActionFor(order, columns[i], board),
+                  // A dropped card does what its button would: ask for a reason
+                  // when cancelling, then send the action.
+                  onDrop: (order, action) {
+                    _dragging.value = null;
+                    runOrderAction(
+                      context,
+                      order: order,
+                      action: action,
+                      onAction: (a, {reason, payload}) =>
+                          onAction(order, a, reason: reason, payload: payload),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -201,9 +309,32 @@ class _HistoryGrid extends StatelessWidget {
           key: ValueKey('${order.platform}:${order.platformOrderId}'),
           order: order,
           isActionPending: false,
-          onAction: (_, {reason}) {},
+          onAction: (_, {reason, payload}) {},
         );
       },
     );
   }
+}
+
+bool _newOrderDialogOpen = false;
+
+Future<void> _showNewOrderDialog(BuildContext context) async {
+  if (_newOrderDialogOpen) return; // open dialog re-renders from state
+  _newOrderDialogOpen = true;
+  final bloc = context.read<OrdersBloc>();
+  await showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierLabel: 'new-order',
+    barrierColor: Colors.black87,
+    transitionDuration: const Duration(milliseconds: 400),
+    pageBuilder: (_, _, _) =>
+        BlocProvider.value(value: bloc, child: const NewOrderDialog()),
+    transitionBuilder: (_, anim, _, child) => ScaleTransition(
+      scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
+      child: FadeTransition(opacity: anim, child: child),
+    ),
+  );
+  _newOrderDialogOpen = false;
+  bloc.add(const NewOrderAlertDismissed());
 }

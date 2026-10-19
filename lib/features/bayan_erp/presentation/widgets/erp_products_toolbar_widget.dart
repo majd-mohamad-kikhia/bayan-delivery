@@ -8,7 +8,7 @@ import '../bloc/bayan_erp_event.dart';
 import '../bloc/bayan_erp_state.dart';
 import '../utils/erp_stock_style.dart';
 
-enum ErpProductsViewMode { grid, table }
+enum ErpProductsViewMode { tree, grid, table }
 
 class ErpProductsToolbarWidget extends StatelessWidget {
   const ErpProductsToolbarWidget({
@@ -49,8 +49,9 @@ class _SearchField extends StatefulWidget {
 }
 
 class _SearchFieldState extends State<_SearchField> {
-  late final TextEditingController _controller =
-      TextEditingController(text: context.read<BayanErpBloc>().state.productsQuery);
+  late final TextEditingController _controller = TextEditingController(
+    text: context.read<BayanErpBloc>().state.productsQuery,
+  );
 
   @override
   void dispose() {
@@ -66,7 +67,9 @@ class _SearchFieldState extends State<_SearchField> {
     return BlocListener<BayanErpBloc, BayanErpState>(
       listenWhen: (p, c) => p.productsQuery != c.productsQuery,
       listener: (_, state) {
-        if (_controller.text != state.productsQuery) _controller.text = state.productsQuery;
+        if (_controller.text != state.productsQuery) {
+          _controller.text = state.productsQuery;
+        }
       },
       child: SizedBox(
         width: 320,
@@ -81,7 +84,11 @@ class _SearchFieldState extends State<_SearchField> {
             fillColor: AppTheme.surface,
             hintText: 'Search by name, short name or ID',
             hintStyle: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
-            prefixIcon: const Icon(Icons.search_rounded, size: 19, color: AppTheme.textMuted),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              size: 19,
+              color: AppTheme.textMuted,
+            ),
             suffixIcon: ValueListenableBuilder<TextEditingValue>(
               valueListenable: _controller,
               builder: (_, value, _) => value.text.isEmpty
@@ -120,12 +127,14 @@ class _StockFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<BayanErpBloc, BayanErpState>(
       buildWhen: (p, c) =>
-          p.products != c.products || p.productsStockFilter != c.productsStockFilter,
+          p.products != c.products ||
+          p.productsStockFilter != c.productsStockFilter,
       builder: (context, state) {
         final summary = state.productsStockSummary;
         final selected = state.productsStockFilter;
-        void select(ErpStockLevel? level) =>
-            context.read<BayanErpBloc>().add(BayanErpProductsStockFilterChanged(level));
+        void select(ErpStockLevel? level) => context.read<BayanErpBloc>().add(
+          BayanErpProductsStockFilterChanged(level),
+        );
 
         return Wrap(
           spacing: 8,
@@ -245,6 +254,11 @@ class _ViewModeToggle extends StatelessWidget {
         visualDensity: VisualDensity.compact,
       ),
       segments: const [
+        ButtonSegment(
+          value: ErpProductsViewMode.tree,
+          icon: Icon(Icons.account_tree_outlined, size: 18),
+          tooltip: 'Tree view',
+        ),
         ButtonSegment(
           value: ErpProductsViewMode.grid,
           icon: Icon(Icons.grid_view_rounded, size: 18),

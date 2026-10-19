@@ -18,7 +18,10 @@ Future<String?> showCancelReasonDialog(
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 300),
     transitionBuilder: (context, animation, _, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutBack);
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutBack,
+      );
       return FadeTransition(
         opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
         child: ScaleTransition(
@@ -87,7 +90,11 @@ class _CancelDialogState extends State<_CancelDialog> {
                     color: AppTheme.coral.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.cancel_outlined, size: 32, color: AppTheme.coral),
+                  child: const Icon(
+                    Icons.cancel_outlined,
+                    size: 32,
+                    color: AppTheme.coral,
+                  ),
                 ),
                 const SizedBox(height: 16),
 
@@ -105,13 +112,20 @@ class _CancelDialogState extends State<_CancelDialog> {
                 // Subtitle
                 Text(
                   s.orderNumber(widget.orderId),
-                  style: const TextStyle(fontSize: 14, color: AppTheme.textMuted),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   s.cancelReasonPrompt,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.4),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -124,10 +138,16 @@ class _CancelDialogState extends State<_CancelDialog> {
                   onSubmitted: (_) => _submit(),
                   decoration: InputDecoration(
                     hintText: s.cancelReasonHint,
-                    hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                    hintStyle: const TextStyle(
+                      color: AppTheme.textMuted,
+                      fontSize: 13,
+                    ),
                     filled: true,
                     fillColor: AppTheme.surfaceAlt,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: AppTheme.border),
@@ -138,7 +158,10 @@ class _CancelDialogState extends State<_CancelDialog> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.coral, width: 1.5),
+                      borderSide: const BorderSide(
+                        color: AppTheme.coral,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -194,9 +217,7 @@ class _DialogButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: filled ? AppTheme.coral : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: filled ? AppTheme.coral : AppTheme.border,
-          ),
+          border: Border.all(color: filled ? AppTheme.coral : AppTheme.border),
         ),
         alignment: Alignment.center,
         child: Text(

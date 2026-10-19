@@ -10,6 +10,7 @@ class PlatformColors {
   static const Map<String, Color> _colors = {
     'keeta': Color(0xFF6D28D9),
     'hungerstation': Color(0xFFEA580C),
+    'all': Color(0xFF1E293B),
   };
 
   static const Color _fallback = Color(0xFF475569);

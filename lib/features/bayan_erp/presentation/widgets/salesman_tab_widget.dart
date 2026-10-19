@@ -56,11 +56,13 @@ class _SalesmenTable extends StatelessWidget {
           ],
           rows: [
             for (final s in rows)
-              DataRow(cells: [
-                DataCell(_IdBadge(s.id)),
-                DataCell(_SalesmanNameCell(name: s.name)),
-                DataCell(_PhoneCell(s.phone)),
-              ]),
+              DataRow(
+                cells: [
+                  DataCell(_IdBadge(s.id)),
+                  DataCell(_SalesmanNameCell(name: s.name)),
+                  DataCell(_PhoneCell(s.phone)),
+                ],
+              ),
           ],
         ),
       ),
@@ -74,20 +76,20 @@ class _IdBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: AppTheme.sidebarItem,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          '#$id',
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
-            color: AppTheme.sidebarText,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: AppTheme.sidebarItem,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      '#$id',
+      style: const TextStyle(
+        fontFamily: 'monospace',
+        fontSize: 11,
+        color: AppTheme.sidebarText,
+      ),
+    ),
+  );
 }
 
 class _SalesmanNameCell extends StatelessWidget {
@@ -96,20 +98,20 @@ class _SalesmanNameCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircleAvatar(
-            radius: 14,
-            backgroundColor: Color(0x203D5AFE),
-            child: Icon(Icons.person_outline, size: 14, color: AppTheme.primary),
-          ),
-          const SizedBox(width: 8),
-          Directionality(
-            textDirection: TextDirection.rtl,
-            child: Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
-          ),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const CircleAvatar(
+        radius: 14,
+        backgroundColor: Color(0x203D5AFE),
+        child: Icon(Icons.person_outline, size: 14, color: AppTheme.primary),
+      ),
+      const SizedBox(width: 8),
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
+      ),
+    ],
+  );
 }
 
 class _PhoneCell extends StatelessWidget {
@@ -124,7 +126,11 @@ class _PhoneCell extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.phone_outlined, size: 13, color: AppTheme.textSecondary),
+        const Icon(
+          Icons.phone_outlined,
+          size: 13,
+          color: AppTheme.textSecondary,
+        ),
         const SizedBox(width: 4),
         Text(phone, style: const TextStyle(fontSize: 13)),
       ],

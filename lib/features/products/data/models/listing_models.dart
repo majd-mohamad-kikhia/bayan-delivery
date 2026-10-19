@@ -83,6 +83,7 @@ sealed class PlatformListing extends Equatable {
         'keeta' => KeetaListing(
           price: product.salePrice,
           category: product.category,
+          addOnGroups: product.addOnGroups,
         ),
         'hungerstation' => HsListing(
           price: product.salePrice,
@@ -121,10 +122,15 @@ final class KeetaListing extends PlatformListing {
     this.nutrition = const {},
     this.servingSize,
     this.caffeineMg,
+    this.addOnGroups = const [],
   });
 
   @override
   String get platformId => 'keeta';
+
+  /// Extras offered with the product: one choice group each, created on Keeta
+  /// when missing and linked to the SPU.
+  final List<AddOnGroup> addOnGroups;
 
   /// `isSpecialty` — at most 15 per store.
   final bool signature;
@@ -157,6 +163,7 @@ final class KeetaListing extends PlatformListing {
     Map<KeetaNutrient, int>? nutrition,
     int? Function()? servingSize,
     double? Function()? caffeineMg,
+    List<AddOnGroup>? addOnGroups,
   }) => KeetaListing(
     price: price ?? this.price,
     available: available ?? this.available,
@@ -170,6 +177,7 @@ final class KeetaListing extends PlatformListing {
     nutrition: nutrition ?? this.nutrition,
     servingSize: servingSize != null ? servingSize() : this.servingSize,
     caffeineMg: caffeineMg != null ? caffeineMg() : this.caffeineMg,
+    addOnGroups: addOnGroups ?? this.addOnGroups,
   );
 
   @override
@@ -186,6 +194,7 @@ final class KeetaListing extends PlatformListing {
     nutrition,
     servingSize,
     caffeineMg,
+    addOnGroups,
   ];
 }
 
